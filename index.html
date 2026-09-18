@@ -377,7 +377,7 @@
       </div>
       <table class="list" id="listTable">
         <thead>
-          <tr><th style="width:28px;"><input type="checkbox" id="selectAllChk"></th><th class="sortable" data-col="date">날짜<span class="sortArrow"></span></th><th class="sortable" data-col="dayOfWeek">요일<span class="sortArrow"></span></th><th>교시</th><th class="sortable" data-col="department">부서명<span class="sortArrow"></span></th><th class="sortable" data-col="eventName">행사/교육명<span class="sortArrow"></span></th><th>비고</th></tr>
+          <tr><th style="width:28px;"><input type="checkbox" id="selectAllChk"></th><th class="sortable" data-col="date">날짜<span class="sortArrow"></span></th><th class="sortable" data-col="dayOfWeek">요일<span class="sortArrow"></span></th><th>학년</th><th>교시</th><th class="sortable" data-col="department">부서명<span class="sortArrow"></span></th><th class="sortable" data-col="eventName">행사/교육명<span class="sortArrow"></span></th><th>비고</th></tr>
         </thead>
         <tbody id="listBody"></tbody>
       </table>
@@ -751,7 +751,7 @@ document.getElementById('f_periodsAll').addEventListener('click', ()=>{
 document.getElementById('entryForm').addEventListener('submit', async (e)=>{
   e.preventDefault();
   const msg = document.getElementById('formMsg');
-  msg.className = 'msg'; msg.style.display='none';
+  msg.className = 'msg';
 
   const date = document.getElementById('f_date').value;
   const endDateVal = document.getElementById('f_endDate').value;
@@ -828,7 +828,7 @@ document.getElementById('entryForm').addEventListener('submit', async (e)=>{
 /* ---------- 일괄 붙여넣기 ---------- */
 document.getElementById('bulkSubmit').addEventListener('click', async ()=>{
   const msg = document.getElementById('bulkMsg');
-  msg.className='msg'; msg.style.display='none';
+  msg.className='msg';
   const year = document.getElementById('bulk_year').value.trim();
   const pw = document.getElementById('bulk_pw').value;
   const raw = document.getElementById('bulk_text').value;
@@ -895,7 +895,7 @@ document.getElementById('bulk_file').addEventListener('change', function(e){
   const file = e.target.files[0];
   if(!file) return;
   const msg = document.getElementById('bulkMsg');
-  msg.className='msg'; msg.style.display='none';
+  msg.className='msg';
   const yearFallback = document.getElementById('bulk_year').value.trim() || null;
 
   const reader = new FileReader();
@@ -1251,6 +1251,7 @@ function renderList(){
       <td><input type="checkbox" class="rowChk" data-id="${en.id}" ${selectedIds.has(en.id)?'checked':''}></td>
       <td>${en.date}</td>
       <td>${en.dayOfWeek}</td>
+      <td>${(en.grades && en.grades.length>0) ? en.grades.join(',') : ''}</td>
       <td>${periodsLabel(en.periods)}</td>
       <td>${escapeHtml(en.department)}</td>
       <td>${escapeHtml(en.eventName)}</td>
@@ -1343,7 +1344,7 @@ function unlockAndFill(){
   ePeriodsWrap.querySelectorAll('input').forEach(inp=>{
     inp.checked = activeEntry.periods.includes(parseInt(inp.value));
   });
-  document.getElementById('editMsg').className='msg'; document.getElementById('editMsg').style.display='none';
+  document.getElementById('editMsg').className='msg';
 }
 
 document.getElementById('saveEditBtn').onclick = async ()=>{
