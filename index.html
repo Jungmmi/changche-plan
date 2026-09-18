@@ -450,6 +450,32 @@ function deptColor(deptName){
   for(let i=0;i<deptName.length;i++){ hash = (hash*31 + deptName.charCodeAt(i)) >>> 0; }
   return DEPT_COLOR_LIST[hash % DEPT_COLOR_LIST.length];
 }
+
+// 대한민국 공휴일 (관공서 휴일 기준, 2026년 ~ 2027년 1월). 매년 말에 다음 해 것을 추가해주세요.
+const KOREAN_HOLIDAYS = {
+  "2026-01-01": "신정",
+  "2026-02-16": "설날 연휴",
+  "2026-02-17": "설날",
+  "2026-02-18": "설날 연휴",
+  "2026-03-01": "삼일절",
+  "2026-03-02": "삼일절 대체공휴일",
+  "2026-05-05": "어린이날",
+  "2026-05-24": "부처님오신날",
+  "2026-05-25": "부처님오신날 대체공휴일",
+  "2026-06-03": "전국동시지방선거일",
+  "2026-06-06": "현충일",
+  "2026-07-17": "제헌절",
+  "2026-08-15": "광복절",
+  "2026-08-17": "광복절 대체공휴일",
+  "2026-09-24": "추석 연휴",
+  "2026-09-25": "추석",
+  "2026-09-26": "추석 연휴",
+  "2026-10-03": "개천절",
+  "2026-10-05": "개천절 대체공휴일",
+  "2026-10-09": "한글날",
+  "2026-12-25": "크리스마스",
+  "2027-01-01": "신정"
+};
 /* ========================================================= */
 
 firebase.initializeApp(FIREBASE_CONFIG);
@@ -759,7 +785,10 @@ function renderCalendar(){
     (byDate[en.date] = byDate[en.date] || []).push(en);
   });
 
-  let html = '<thead><tr>' + DAY_NAMES.map(d=>`<th>${d}</th>`).join('') + '</tr></thead><tbody>';
+  let html = '<thead><tr>' + DAY_NAMES.map((d,i)=>{
+    let color = i===0 ? 'var(--danger)' : (i===6 ? '#2A5DB0' : 'var(--muted)');
+    return `<th style="color:${color}">${d}</th>`;
+  }).join('') + '</tr></thead><tbody>';
   let dayCounter = 1 - startOffset;
   for(let row=0; row<6; row++){
     html += '<tr>';
@@ -772,7 +801,14 @@ function renderCalendar(){
       if(cm<0){cm=11; cy--;} if(cm>11){cm=0; cy++;}
       const dateStr = `${cy}-${String(cm+1).padStart(2,'0')}-${String(dNum).padStart(2,'0')}`;
       const items = byDate[dateStr] || [];
-      html += `<td class="${cls}"><div class="dnum">${dNum}</div>`;
+      const holidayName = KOREAN_HOLIDAYS[dateStr];
+      let dnumStyle = '';
+      if(cls !== 'otherMonth'){
+        if(holidayName || col===0) dnumStyle = 'color:var(--danger);font-weight:700;';
+        else if(col===6) dnumStyle = 'color:#2A5DB0;font-weight:700;';
+      }
+      html += `<td class="${cls}"><div class="dnum" style="${dnumStyle}">${dNum}</div>`;
+      if(holidayName && cls!=='otherMonth') html += `<div style="font-size:10.5px;color:var(--danger);margin-bottom:3px;">${holidayName}</div>`;
       items.slice(0,4).forEach(it=>{
         const c = deptColor(it.department);
         html += `<span class="chip" data-id="${it.id}" style="background:${c.bg};color:${c.text};border-color:${c.text}33;">${periodsLabel(it.periods)} ${it.eventName}</span>`;
