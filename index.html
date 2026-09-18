@@ -3,158 +3,171 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>창의적 체험활동 계획 관리</title>
+<title>2026학년도 배곧해솔중 창의적체험활동 계획 관리</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
 <style>
   :root{
-    --bg:#F5F6F4;
+    --bg:#F3F4F7;
     --surface:#FFFFFF;
-    --ink:#1E2A2E;
-    --muted:#5C6B6E;
-    --primary:#2B5D6B;
-    --primary-dark:#1D434E;
-    --accent:#C97B3D;
-    --border:#DCE2DE;
-    --success:#3F7D5C;
-    --danger:#B3452F;
-    --radius:6px;
+    --surface-alt:#FAFBFC;
+    --ink:#16202A;
+    --muted:#6B7684;
+    --primary:#16324F;
+    --primary-light:#2C5282;
+    --accent:#B8862B;
+    --border:#E5E8ED;
+    --success:#1F9D6D;
+    --danger:#D14343;
+    --radius:10px;
+    --shadow:0 1px 2px rgba(16,24,40,.04), 0 4px 14px rgba(16,24,40,.06);
   }
   *{box-sizing:border-box;}
   body{
     margin:0;
     background:var(--bg);
     color:var(--ink);
-    font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Segoe UI",sans-serif;
-    line-height:1.55;
+    font-family:'Pretendard',-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Segoe UI",sans-serif;
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
   }
-  .wrap{max-width:1040px;margin:0 auto;padding:28px 20px 80px;}
+  .wrap{max-width:1080px;margin:0 auto;padding:36px 22px 90px;}
 
   header.top{
-    padding-bottom:18px;margin-bottom:20px;border-bottom:1px solid var(--border);
+    padding:26px 30px;margin-bottom:26px;border-radius:var(--radius);
+    background:linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+    box-shadow:var(--shadow);
   }
-  header.top h1{font-size:20px;font-weight:700;margin:0;color:var(--primary-dark);}
-  header.top p{margin:4px 0 0;font-size:13px;color:var(--muted);}
+  header.top h1{font-size:21px;font-weight:700;margin:0;color:#fff;letter-spacing:-.2px;}
+  header.top p{margin:6px 0 0;font-size:13px;color:rgba(255,255,255,.72);}
 
   button{
     font-family:inherit;cursor:pointer;border:1px solid var(--primary);
-    background:var(--primary);color:#fff;border-radius:var(--radius);
-    padding:8px 14px;font-size:14px;transition:background .15s;
+    background:var(--primary);color:#fff;border-radius:8px;
+    padding:9px 16px;font-size:14px;font-weight:600;transition:all .15s;
   }
-  button:hover{background:var(--primary-dark);}
-  button.secondary{background:#fff;color:var(--primary);}
-  button.secondary:hover{background:#EEF3F2;}
-  button.danger{background:#fff;border-color:var(--danger);color:var(--danger);}
-  button.danger:hover{background:#FBEDE9;}
+  button:hover{background:var(--primary-light);border-color:var(--primary-light);}
+  button.secondary{background:#fff;color:var(--primary);border-color:var(--border);}
+  button.secondary:hover{background:var(--surface-alt);border-color:var(--primary-light);color:var(--primary-light);}
+  button.danger{background:#fff;border-color:var(--border);color:var(--danger);}
+  button.danger:hover{background:#FCEEEE;border-color:var(--danger);}
   button:disabled{opacity:.45;cursor:not-allowed;}
 
-  .tabs{display:flex;gap:6px;margin-bottom:20px;border-bottom:1px solid var(--border);}
+  .tabs{display:flex;gap:6px;margin-bottom:24px;background:var(--surface);border-radius:999px;padding:5px;box-shadow:var(--shadow);width:fit-content;}
   .tab-btn{
-    background:transparent;border:none;color:var(--muted);font-size:14px;font-weight:600;
-    padding:10px 4px;margin-right:18px;border-radius:0;border-bottom:2px solid transparent;
+    background:transparent;border:none;color:var(--muted);font-size:13.5px;font-weight:600;
+    padding:9px 20px;border-radius:999px;
   }
-  .tab-btn:hover{background:transparent;color:var(--primary-dark);}
-  .tab-btn.active{color:var(--primary-dark);border-bottom-color:var(--primary);}
+  .tab-btn:hover{background:var(--surface-alt);color:var(--primary);}
+  .tab-btn.active{color:#fff;background:var(--primary);}
 
   #todayList .todayItem{
-    display:flex;gap:10px;align-items:baseline;padding:8px 0;border-bottom:1px solid var(--border);
+    display:flex;gap:10px;align-items:baseline;padding:10px 0;border-bottom:1px solid var(--border);
     font-size:14px;
   }
   #todayList .todayItem:last-child{border-bottom:none;}
-  #todayList .todayItem .tp{color:var(--primary-dark);font-weight:600;min-width:64px;}
-  #todayList .todayItem .td{color:var(--muted);font-size:13px;}
+  #todayList .todayItem .tp{color:var(--primary);font-weight:700;min-width:66px;font-size:13px;}
+  #todayList .todayItem .td{color:var(--muted);font-size:12.5px;}
 
   section.card{
     background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
-    padding:22px 24px;margin-bottom:22px;
+    padding:26px 28px;margin-bottom:22px;box-shadow:var(--shadow);
   }
   section.card h2{
-    font-size:16px;margin:0 0 16px;padding-left:12px;border-left:4px solid var(--primary);
-    color:var(--primary-dark);
+    font-size:15.5px;margin:0 0 18px;font-weight:700;
+    color:var(--primary);letter-spacing:-.1px;
+    display:flex;align-items:center;gap:8px;
+  }
+  section.card h2::before{
+    content:'';display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--accent);
   }
 
-  #guideBox ul{margin:8px 0 0;padding-left:18px;color:var(--ink);font-size:14px;}
-  #guideBox li{margin-bottom:4px;}
-  #guideBox .note{margin-top:12px;font-size:13px;color:var(--muted);}
+  #guideBox ul{margin:10px 0 0;padding-left:18px;color:var(--ink);font-size:13.5px;}
+  #guideBox li{margin-bottom:5px;}
+  #guideBox .note{margin-top:14px;font-size:12.5px;color:var(--muted);background:var(--surface-alt);padding:10px 12px;border-radius:8px;}
 
-  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
   @media(max-width:640px){.grid2{grid-template-columns:1fr;}}
-  label{display:block;font-size:13px;color:var(--muted);margin-bottom:5px;}
+  label{display:block;font-size:12.5px;color:var(--muted);margin-bottom:6px;font-weight:600;}
   input[type=text],input[type=date],input[type=password],textarea{
-    width:100%;padding:9px 10px;border:1px solid var(--border);border-radius:var(--radius);
-    font-size:14px;font-family:inherit;background:#fff;color:var(--ink);
+    width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;
+    font-size:14px;font-family:inherit;background:#fff;color:var(--ink);transition:border-color .15s;
   }
+  input:focus,textarea:focus{outline:none;border-color:var(--primary-light);}
   textarea{resize:vertical;}
-  .field{margin-bottom:14px;}
+  .field{margin-bottom:16px;}
   .periods{display:flex;flex-wrap:wrap;gap:8px;}
   .periods label{
     display:flex;align-items:center;gap:5px;border:1px solid var(--border);
-    padding:6px 10px;border-radius:var(--radius);font-size:13px;color:var(--ink);cursor:pointer;
+    padding:7px 11px;border-radius:8px;font-size:13px;color:var(--ink);cursor:pointer;font-weight:500;
   }
   .periods input{width:auto;}
-  .formActions{display:flex;gap:10px;margin-top:6px;}
-  .msg{font-size:13px;margin-top:10px;padding:9px 12px;border-radius:var(--radius);display:none;}
-  .msg.error{display:block;background:#FBEDE9;color:var(--danger);border:1px solid #F0C9BC;}
-  .msg.success{display:block;background:#EAF3EE;color:var(--success);border:1px solid #C7E2D2;}
+  .formActions{display:flex;gap:10px;margin-top:8px;}
+  .msg{font-size:13px;margin-top:10px;padding:10px 13px;border-radius:8px;display:none;}
+  .msg.error{display:block;background:#FCEEEE;color:var(--danger);border:1px solid #F4CFCF;}
+  .msg.success{display:block;background:#E9F7F1;color:var(--success);border:1px solid #C5E9D8;}
 
-  details.bulk{margin-top:18px;border-top:1px dashed var(--border);padding-top:16px;}
-  details.bulk summary{cursor:pointer;font-size:14px;color:var(--primary);font-weight:600;}
-  details.bulk .hint{font-size:12px;color:var(--muted);margin:10px 0;white-space:pre-line;}
+  details.bulk{margin-top:20px;border-top:1px dashed var(--border);padding-top:18px;}
+  details.bulk summary{cursor:pointer;font-size:13.5px;color:var(--primary);font-weight:700;}
+  details.bulk .hint{font-size:12px;color:var(--muted);margin:12px 0;white-space:pre-line;background:var(--surface-alt);padding:12px;border-radius:8px;}
   details.bulk textarea{min-height:110px;font-family:ui-monospace,Consolas,monospace;font-size:12.5px;}
 
   /* calendar */
-  #calControls{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
-  #calLabel{font-size:15px;font-weight:700;color:var(--primary-dark);}
+  #calControls{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+  #calLabel{font-size:15px;font-weight:700;color:var(--primary);}
   table.cal{width:100%;border-collapse:collapse;table-layout:fixed;}
-  table.cal th{font-size:12px;color:var(--muted);padding:6px 0;font-weight:600;}
+  table.cal th{font-size:12px;color:var(--muted);padding:8px 0;font-weight:700;}
   table.cal td{
-    border:1px solid var(--border);vertical-align:top;height:92px;padding:5px;font-size:12px;
+    border:1px solid var(--border);vertical-align:top;height:94px;padding:6px;font-size:12px;
     position:relative;
   }
-  table.cal td.otherMonth{background:#FAFAF9;color:#B9C1BE;}
-  table.cal .dnum{font-size:12px;color:var(--muted);margin-bottom:3px;}
+  table.cal td.otherMonth{background:var(--surface-alt);color:#C4CAD1;}
+  table.cal .dnum{font-size:12px;color:var(--muted);margin-bottom:4px;font-weight:600;}
   .chip{
-    background:#EAF1F0;border:1px solid #CFE0DC;color:var(--primary-dark);
-    font-size:11px;padding:2px 5px;border-radius:4px;margin-bottom:3px;cursor:pointer;
-    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;
+    background:#EEF3F8;border:1px solid #D9E3EE;color:var(--primary);
+    font-size:11px;padding:2px 6px;border-radius:5px;margin-bottom:3px;cursor:pointer;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;font-weight:500;
   }
-  .chip:hover{background:#D9E9E5;}
+  .chip:hover{background:#DEE9F3;}
 
-  /* counts */
+  /* counts (요일 x 교시 시간표) */
+  #countSemSelect{margin-bottom:14px;}
   table.counts{width:100%;border-collapse:collapse;font-size:13px;}
-  table.counts th,table.counts td{border:1px solid var(--border);padding:7px 10px;text-align:center;}
-  table.counts th{background:#F3F5F3;color:var(--muted);font-weight:600;}
-  select{padding:7px 9px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;font-family:inherit;}
+  table.counts th,table.counts td{border:1px solid var(--border);padding:10px 6px;text-align:center;}
+  table.counts th{background:var(--surface-alt);color:var(--primary);font-weight:700;}
+  table.counts td{color:var(--ink);font-weight:600;}
+  select{padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;background:#fff;}
 
   /* list */
-  #listControls{display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;}
+  #listControls{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
   table.list{width:100%;border-collapse:collapse;font-size:13px;}
-  table.list th,table.list td{border-bottom:1px solid var(--border);padding:8px 8px;text-align:left;}
-  table.list th{color:var(--muted);font-weight:600;font-size:12px;}
-  table.list tr:hover td{background:#F7F9F8;cursor:pointer;}
-  .empty{color:var(--muted);font-size:13px;padding:14px 0;text-align:center;}
+  table.list th,table.list td{border-bottom:1px solid var(--border);padding:10px 8px;text-align:left;}
+  table.list th{color:var(--muted);font-weight:700;font-size:11.5px;letter-spacing:.2px;}
+  table.list tr:hover td{background:var(--surface-alt);cursor:pointer;}
+  .empty{color:var(--muted);font-size:13px;padding:16px 0;text-align:center;}
 
   /* modal */
   .overlay{
-    display:none;position:fixed;inset:0;background:rgba(20,28,30,.45);
-    align-items:center;justify-content:center;z-index:50;padding:16px;
+    display:none;position:fixed;inset:0;background:rgba(15,22,28,.5);
+    align-items:center;justify-content:center;z-index:50;padding:16px;backdrop-filter:blur(2px);
   }
   .overlay.show{display:flex;}
   .modal{
     background:#fff;border-radius:var(--radius);max-width:520px;width:100%;
-    max-height:88vh;overflow-y:auto;padding:24px;
+    max-height:88vh;overflow-y:auto;padding:26px;box-shadow:0 20px 50px rgba(16,24,40,.25);
   }
-  .modal h3{margin:0 0 14px;font-size:16px;color:var(--primary-dark);}
-  .modal .closeRow{display:flex;justify-content:flex-end;margin-top:16px;gap:8px;}
+  .modal h3{margin:0 0 16px;font-size:16px;color:var(--primary);font-weight:700;}
+  .modal .closeRow{display:flex;justify-content:flex-end;margin-top:18px;gap:8px;}
 
-  .lockNotice{background:#F3F5F3;border:1px solid var(--border);border-radius:var(--radius);padding:12px;font-size:13px;color:var(--muted);margin-bottom:10px;}
+  .lockNotice{background:var(--surface-alt);border:1px solid var(--border);border-radius:8px;padding:13px;font-size:13px;color:var(--muted);margin-bottom:12px;}
   .adminHint{font-size:12px;color:var(--muted);margin-top:6px;}
-  footer.foot{text-align:center;color:var(--muted);font-size:12px;margin-top:30px;}
+  footer.foot{text-align:center;color:var(--muted);font-size:12px;margin-top:34px;}
 </style>
 </head>
 <body>
 <div class="wrap">
 
   <header class="top">
-    <h1>창의적 체험활동 계획 관리</h1>
+    <h1>2026학년도 배곧해솔중 창의적체험활동 계획 관리</h1>
     <p>교내 창체 계획을 입력·확인하는 페이지입니다.</p>
   </header>
 
@@ -165,17 +178,6 @@
   </nav>
 
   <div class="tabPanel" id="tab-home">
-
-    <!-- 안내사항 -->
-    <section class="card" id="guideBox">
-      <h2>안내사항</h2>
-      <ul>
-        <li>1학년 목요일 6~7교시 : 스포츠클럽</li>
-        <li>2학년 금요일 5~6교시 : 스포츠클럽 및 동아리</li>
-        <li>3학년 금요일 3~4교시 : 스포츠클럽</li>
-      </ul>
-      <p class="note">위 시간에는 창체수업을 입력할 수 없습니다. 부서명에 "1학년", "2학년", "3학년"이 포함된 경우 자동으로 검사합니다.</p>
-    </section>
 
     <!-- 오늘 일정 -->
     <section class="card" id="todaySection">
@@ -194,24 +196,31 @@
       <table class="cal" id="calTable"></table>
     </section>
 
-    <!-- 교시 카운트 -->
-    <section class="card" id="countSection">
-      <h2>학기별 교시 사용 횟수</h2>
-      <table class="counts" id="countTable"></table>
-    </section>
-
   </div>
 
   <div class="tabPanel" id="tab-input" style="display:none;">
 
+    <!-- 안내사항 -->
+    <section class="card" id="guideBox">
+      <h2>안내사항</h2>
+      <ul>
+        <li>1학년 목요일 6~7교시 : 스포츠클럽</li>
+        <li>2학년 금요일 5~6교시 : 스포츠클럽 및 동아리</li>
+        <li>3학년 금요일 3~4교시 : 스포츠클럽</li>
+      </ul>
+      <p class="note">위 시간에는 창체수업을 입력할 수 없습니다. 부서명에 "1학년", "2학년", "3학년"이 포함된 경우 자동으로 검사합니다.</p>
+    </section>
+
     <!-- 입력 폼 -->
     <section class="card" id="inputSection">
       <h2>창체 계획 입력</h2>
-      <form id="entryForm">
+      <form id="entryForm" autocomplete="off">
+        <input type="text" name="fake-username" autocomplete="username" style="display:none">
+        <input type="password" name="fake-password" autocomplete="new-password" style="display:none">
         <div class="grid2">
           <div class="field">
             <label>날짜</label>
-            <input type="date" id="f_date" required />
+            <input type="date" id="f_date" required autocomplete="off" />
           </div>
           <div class="field">
             <label>교시 (해당 교시 모두 선택)</label>
@@ -223,20 +232,20 @@
         <div class="grid2">
           <div class="field">
             <label>부서명</label>
-            <input type="text" id="f_dept" placeholder="예: 1학년부, 체육부" required />
+            <input type="text" id="f_dept" placeholder="예: 1학년부, 체육부" required autocomplete="off" />
           </div>
           <div class="field">
             <label>행사 또는 교육명</label>
-            <input type="text" id="f_event" required />
+            <input type="text" id="f_event" required autocomplete="off" name="event-name-field" />
           </div>
         </div>
         <div class="field">
           <label>비고</label>
-          <textarea id="f_note" rows="2"></textarea>
+          <textarea id="f_note" rows="2" autocomplete="off"></textarea>
         </div>
         <div class="field">
           <label>수정용 비밀번호 (나중에 이 항목을 수정/삭제할 때 필요합니다)</label>
-          <input type="password" id="f_pw" required minlength="4" placeholder="4자 이상" />
+          <input type="password" id="f_pw" required minlength="4" placeholder="4자 이상" autocomplete="new-password" />
         </div>
         <div class="formActions">
           <button type="submit">저장</button>
@@ -250,22 +259,33 @@
 월 / 일자 / 요일 / 1교시 / 2교시 / 3교시 / 4교시 / 5교시 / 6교시 / 7교시 / 부서명 / 행사명 / 비고
 (요일 칸은 자동 계산되므로 값이 있어도 무시됩니다. 교시 칸은 값이 있으면 "사용"으로 처리됩니다.)
 과거 데이터이므로 스포츠클럽 시간 충돌 검사는 적용되지 않습니다.</div>
-        <div class="grid2">
-          <div class="field">
-            <label>기준 연도</label>
-            <input type="text" id="bulk_year" placeholder="예: 2026" style="max-width:140px;" />
+        <form id="bulkForm" autocomplete="off" onsubmit="return false;">
+          <input type="text" name="fake-username-2" autocomplete="username" style="display:none">
+          <input type="password" name="fake-password-2" autocomplete="new-password" style="display:none">
+          <div class="grid2">
+            <div class="field">
+              <label>기준 연도</label>
+              <input type="text" id="bulk_year" placeholder="예: 2026" style="max-width:140px;" autocomplete="off" name="bulk-year-field" />
+            </div>
+            <div class="field">
+              <label>일괄 적용 비밀번호</label>
+              <input type="password" id="bulk_pw" minlength="4" placeholder="4자 이상" autocomplete="new-password" />
+            </div>
           </div>
           <div class="field">
-            <label>일괄 적용 비밀번호</label>
-            <input type="password" id="bulk_pw" minlength="4" placeholder="4자 이상" />
+            <textarea id="bulk_text" placeholder="여기에 붙여넣기" autocomplete="off"></textarea>
           </div>
-        </div>
-        <div class="field">
-          <textarea id="bulk_text" placeholder="여기에 붙여넣기"></textarea>
-        </div>
-        <button type="button" id="bulkSubmit" class="secondary">일괄 업로드</button>
-        <div class="msg" id="bulkMsg"></div>
+          <button type="button" id="bulkSubmit" class="secondary">일괄 업로드</button>
+          <div class="msg" id="bulkMsg"></div>
+        </form>
       </details>
+    </section>
+
+    <!-- 교시 카운트 -->
+    <section class="card" id="countSection">
+      <h2>학기별 교시 사용 횟수</h2>
+      <select id="countSemSelect"></select>
+      <table class="counts" id="countTable"></table>
     </section>
 
   </div>
@@ -304,7 +324,7 @@
       <div class="lockNotice">이 항목을 수정하거나 삭제하려면 등록 시 설정한 비밀번호를 입력하세요.</div>
       <div class="field">
         <label>비밀번호</label>
-        <input type="password" id="unlockPw" />
+        <input type="password" id="unlockPw" autocomplete="new-password" />
         <p class="adminHint">관리자는 관리자 비밀번호를 입력하면 됩니다.</p>
       </div>
       <div class="msg error" id="unlockMsg" style="display:none;"></div>
@@ -317,7 +337,7 @@
       <div class="grid2">
         <div class="field">
           <label>날짜</label>
-          <input type="date" id="e_date" />
+          <input type="date" id="e_date" autocomplete="off" />
         </div>
         <div class="field">
           <label>교시</label>
@@ -327,16 +347,16 @@
       <div class="grid2">
         <div class="field">
           <label>부서명</label>
-          <input type="text" id="e_dept" />
+          <input type="text" id="e_dept" autocomplete="off" />
         </div>
         <div class="field">
           <label>행사 또는 교육명</label>
-          <input type="text" id="e_event" />
+          <input type="text" id="e_event" autocomplete="off" />
         </div>
       </div>
       <div class="field">
         <label>비고</label>
-        <textarea id="e_note" rows="2"></textarea>
+        <textarea id="e_note" rows="2" autocomplete="off"></textarea>
       </div>
       <div class="msg" id="editMsg"></div>
       <div class="closeRow">
@@ -653,20 +673,43 @@ function renderCalendar(){
   });
 }
 
-/* ---------- 교시 카운트 ---------- */
+/* ---------- 교시 카운트 (요일 x 교시 시간표) ---------- */
+const countSemSelect = document.getElementById('countSemSelect');
+SEMESTERS.forEach(s=>{
+  const o = document.createElement('option');
+  o.value = s.name; o.textContent = s.name;
+  countSemSelect.appendChild(o);
+});
+(function initCountSemSelect(){
+  const cur = getSemester(todayStr());
+  if(Array.from(countSemSelect.options).some(o=>o.value===cur)) countSemSelect.value = cur;
+})();
+countSemSelect.addEventListener('change', renderCounts);
+
 function renderCounts(){
-  const table = document.getElementById('countTable');
-  const semNames = SEMESTERS.map(s=>s.name);
-  let html = '<tr><th>교시</th>' + semNames.map(n=>`<th>${n}</th>`).join('') + '</tr>';
+  const semester = countSemSelect.value;
+  const days = ['월','화','수','목','금'];
+  const grid = {};
+  for(let p=1;p<=7;p++){ grid[p] = {}; }
+
+  allEntries.filter(en=>en.semester===semester).forEach(en=>{
+    (en.periods||[]).forEach(p=>{
+      const d = en.dayOfWeek;
+      if(!grid[p]) return;
+      grid[p][d] = (grid[p][d]||0)+1;
+    });
+  });
+
+  let html = '<tr><th></th>' + days.map(d=>`<th>${d}</th>`).join('') + '</tr>';
   for(let p=1;p<=7;p++){
-    html += `<tr><td>${p}교시</td>`;
-    semNames.forEach(sn=>{
-      const cnt = allEntries.filter(en=> en.semester===sn && en.periods && en.periods.includes(p)).length;
-      html += `<td>${cnt}</td>`;
+    html += `<tr><th>${p}교시</th>`;
+    days.forEach(d=>{
+      const c = (grid[p] && grid[p][d]) || 0;
+      html += `<td>${c>0 ? c+'회' : '-'}</td>`;
     });
     html += '</tr>';
   }
-  table.innerHTML = html;
+  document.getElementById('countTable').innerHTML = html;
 }
 
 /* ---------- 리스트 ---------- */
