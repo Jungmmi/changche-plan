@@ -129,6 +129,9 @@
   }
   .chip:hover{background:#DEE9F3;}
 
+  .legendItem{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted);padding:3px 9px;border-radius:6px;background:var(--surface-alt);}
+  .legendItem .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+
   /* counts (요일 x 교시 시간표) */
   #countSemSelect{margin-bottom:14px;}
   table.counts{width:100%;border-collapse:collapse;font-size:13px;}
@@ -194,6 +197,7 @@
         <button type="button" class="secondary" id="calNext">다음 달</button>
       </div>
       <table class="cal" id="calTable"></table>
+      <div id="deptLegend" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;"></div>
     </section>
 
   </div>
@@ -214,6 +218,7 @@
     <!-- 입력 폼 -->
     <section class="card" id="inputSection">
       <h2>창체 계획 입력</h2>
+      <p class="note" style="margin:-8px 0 18px;background:var(--surface-alt);padding:10px 12px;border-radius:8px;font-size:12.5px;color:var(--muted);">저장한 내용은 홈 화면의 달력이나 전체목록에서 클릭해서 수정할 수 있습니다.</p>
       <form id="entryForm" autocomplete="off">
         <input type="text" name="fake-username" autocomplete="username" style="display:none">
         <input type="password" name="fake-password" autocomplete="new-password" style="display:none">
@@ -232,7 +237,7 @@
         <div class="grid2">
           <div class="field">
             <label>부서명</label>
-            <input type="text" id="f_dept" placeholder="예: 1학년부, 체육부" required autocomplete="off" />
+            <input type="text" id="f_dept" list="deptList" placeholder="목록에서 선택하거나 직접 입력" required autocomplete="off" />
           </div>
           <div class="field">
             <label>행사 또는 교육명</label>
@@ -352,7 +357,7 @@
       <div class="grid2">
         <div class="field">
           <label>부서명</label>
-          <input type="text" id="e_dept" autocomplete="off" />
+          <input type="text" id="e_dept" list="deptList" autocomplete="off" />
         </div>
         <div class="field">
           <label>행사 또는 교육명</label>
@@ -372,6 +377,21 @@
     </div>
   </div>
 </div>
+
+<datalist id="deptList">
+  <option value="교무기획부">
+  <option value="교육연구부">
+  <option value="교육과정부">
+  <option value="생활안전부">
+  <option value="민주자치부">
+  <option value="미래교육부">
+  <option value="교육정보부">
+  <option value="체육건강부">
+  <option value="진로상담부">
+  <option value="1학년부">
+  <option value="2학년부">
+  <option value="3학년부">
+</datalist>
 
 <!-- ===================== Firebase SDK ===================== -->
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
@@ -406,6 +426,30 @@ const BLOCKED_SLOTS = [
   { grade: "2", day: "금", periods: [5,6], label: "2학년 금요일 5~6교시 스포츠클럽 및 동아리" },
   { grade: "3", day: "금", periods: [3,4], label: "3학년 금요일 3~4교시 스포츠클럽" }
 ];
+
+// 부서 목록 및 달력에 표시할 부서별 색상
+const DEPT_LIST = ["교무기획부","교육연구부","교육과정부","생활안전부","민주자치부","미래교육부","교육정보부","체육건강부","진로상담부","1학년부","2학년부","3학년부"];
+const DEPT_COLOR_LIST = [
+  { bg:"#EAF2FF", text:"#1D4E89" },
+  { bg:"#EAF7F0", text:"#1F7A54" },
+  { bg:"#F5F0FF", text:"#6B3FA0" },
+  { bg:"#FFF0EC", text:"#C1502E" },
+  { bg:"#FFF9E6", text:"#9C7A0A" },
+  { bg:"#ECF7FA", text:"#1B7A8C" },
+  { bg:"#F0F2FF", text:"#4453B8" },
+  { bg:"#FFEFF3", text:"#B03A5B" },
+  { bg:"#EFF7EC", text:"#4C7A2E" },
+  { bg:"#FDEFE0", text:"#B5651D" },
+  { bg:"#E9F5F5", text:"#2C7873" },
+  { bg:"#F3EDE7", text:"#6B4A32" }
+];
+function deptColor(deptName){
+  const idx = DEPT_LIST.indexOf((deptName||'').trim());
+  if(idx>=0) return DEPT_COLOR_LIST[idx];
+  let hash=0;
+  for(let i=0;i<deptName.length;i++){ hash = (hash*31 + deptName.charCodeAt(i)) >>> 0; }
+  return DEPT_COLOR_LIST[hash % DEPT_COLOR_LIST.length];
+}
 /* ========================================================= */
 
 firebase.initializeApp(FIREBASE_CONFIG);
@@ -595,8 +639,21 @@ document.getElementById('bulk_file').addEventListener('change', function(e){
   const reader = new FileReader();
   reader.onload = function(evt){
     try{
-      const data = new Uint8Array(evt.target.result);
-      const wb = XLSX.read(data, { type: 'array' });
+      const bytes = new Uint8Array(evt.target.result);
+      const isCSV = /\.csv$/i.test(file.name);
+      let wb;
+      if(isCSV){
+        // CSV는 한글이 EUC-KR(완성형)로 저장된 경우가 많아 UTF-8로 먼저 시도하고 실패하면 EUC-KR로 재시도
+        let text;
+        try{
+          text = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+        }catch(e){
+          text = new TextDecoder('euc-kr').decode(bytes);
+        }
+        wb = XLSX.read(text, { type: 'string' });
+      } else {
+        wb = XLSX.read(bytes, { type: 'array' });
+      }
       const firstSheetName = wb.SheetNames[0];
       const sheet = wb.Sheets[firstSheetName];
       const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: '' });
@@ -620,7 +677,8 @@ document.getElementById('bulk_file').addEventListener('change', function(e){
         return;
       }
       document.getElementById('bulk_text').value = lines.join('\n');
-      msg.textContent = `파일에서 ${lines.length}행을 불러왔습니다. 내용을 확인한 뒤 "일괄 업로드"를 눌러주세요.`;
+      const preview = lines[0].split('\t');
+      msg.innerHTML = `파일에서 ${lines.length}행을 불러왔습니다. (예시 1행 → 부서명: "${escapeHtml(preview[10]||'')}", 행사명: "${escapeHtml(preview[11]||'')}") 내용을 확인한 뒤 "일괄 업로드"를 눌러주세요.`;
       msg.className='msg success';
     }catch(err){
       msg.textContent = '파일을 읽는 중 오류: ' + err.message;
@@ -671,6 +729,14 @@ function initCalDefault(){
 }
 initCalDefault();
 
+(function renderDeptLegend(){
+  const wrap = document.getElementById('deptLegend');
+  wrap.innerHTML = DEPT_LIST.map((name,idx)=>{
+    const c = DEPT_COLOR_LIST[idx];
+    return `<span class="legendItem"><span class="dot" style="background:${c.text}"></span>${name}</span>`;
+  }).join('');
+})();
+
 document.getElementById('calPrev').onclick = ()=>{
   calMonth--; if(calMonth<0){calMonth=11; calYear--;}
   renderCalendar();
@@ -708,7 +774,8 @@ function renderCalendar(){
       const items = byDate[dateStr] || [];
       html += `<td class="${cls}"><div class="dnum">${dNum}</div>`;
       items.slice(0,4).forEach(it=>{
-        html += `<span class="chip" data-id="${it.id}">${periodsLabel(it.periods)} ${it.eventName}</span>`;
+        const c = deptColor(it.department);
+        html += `<span class="chip" data-id="${it.id}" style="background:${c.bg};color:${c.text};border-color:${c.text}33;">${periodsLabel(it.periods)} ${it.eventName}</span>`;
       });
       if(items.length>4) html += `<div style="font-size:11px;color:var(--muted);">+${items.length-4}건 더</div>`;
       html += '</td>';
