@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>2026학년도 배곧해솔중 창의적체험활동 계획 관리</title>
+<link rel="icon" type="image/png" href="logo.png" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
 <style>
   :root{
@@ -24,19 +25,27 @@
   *{box-sizing:border-box;}
   body{
     margin:0;
-    background:var(--bg);
+    background:
+      radial-gradient(circle at 12% -5%, rgba(44,82,130,.07), transparent 42%),
+      radial-gradient(circle at 105% 105%, rgba(184,134,43,.06), transparent 45%),
+      var(--bg);
+    background-attachment:fixed;
     color:var(--ink);
     font-family:'Pretendard',-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Segoe UI",sans-serif;
     line-height:1.6;
     -webkit-font-smoothing:antialiased;
+    cursor:default;
   }
+  select, .periods label, table.list tbody tr, .tab-btn, .chip, button, input[type=file]{ cursor:pointer; }
   .wrap{max-width:1080px;margin:0 auto;padding:36px 22px 90px;}
 
   header.top{
-    padding:26px 30px;margin-bottom:26px;border-radius:var(--radius);
+    padding:22px 30px;margin-bottom:26px;border-radius:var(--radius);
     background:linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
     box-shadow:var(--shadow);
+    display:flex;align-items:center;gap:16px;
   }
+  header.top img.logo{width:46px;height:46px;border-radius:10px;background:#fff;padding:4px;flex-shrink:0;}
   header.top h1{font-size:21px;font-weight:700;margin:0;color:#fff;letter-spacing:-.2px;}
   header.top p{margin:6px 0 0;font-size:13px;color:rgba(255,255,255,.72);}
 
@@ -170,8 +179,11 @@
 <div class="wrap">
 
   <header class="top">
-    <h1>2026학년도 배곧해솔중 창의적체험활동 계획 관리</h1>
-    <p>교내 창체 계획을 입력·확인하는 페이지입니다.</p>
+    <img class="logo" src="logo.png" alt="학교 로고" />
+    <div>
+      <h1>2026학년도 배곧해솔중 창의적체험활동 계획 관리</h1>
+      <p>교내 창체 계획을 입력·확인하는 페이지입니다.</p>
+    </div>
   </header>
 
   <nav class="tabs" id="mainTabs">
@@ -576,6 +588,34 @@ function isChecked(v){
   if(s==='' || s==='FALSE' || s==='0') return false;
   return true;
 }
+// "7.6-7.10", "7.21~8.14" 같은 날짜 범위를 YYYY-MM-DD 배열로 전개 (최대 60일)
+function parseDateRange(raw, yearFallback){
+  const s = String(raw==null ? '' : raw).trim();
+  if(!s) return null;
+  const parts = s.split(/[~\-]/).map(p=>p.trim()).filter(p=>p!=='');
+  if(parts.length !== 2) return null;
+  const dateA = parseDateFlexible(parts[0], yearFallback);
+  if(!dateA) return null;
+  let dateB;
+  if(/^\d{1,2}$/.test(parts[1])){
+    const [ay, am] = dateA.split('-');
+    dateB = `${ay}-${am}-${pad2(parts[1])}`;
+  } else {
+    dateB = parseDateFlexible(parts[1], yearFallback);
+  }
+  if(!dateB) return null;
+  const start = new Date(dateA+'T00:00:00');
+  const end = new Date(dateB+'T00:00:00');
+  if(isNaN(start) || isNaN(end) || end < start) return null;
+  const days = Math.round((end-start)/86400000);
+  if(days > 60) return null;
+  const list = [];
+  for(let i=0;i<=days;i++){
+    const d = new Date(start); d.setDate(d.getDate()+i);
+    list.push(`${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`);
+  }
+  return list;
+}
 
 /* ---------- Firestore 실시간 구독 (페이지 열리면 바로 시작) ---------- */
 db.collection('changche_entries').orderBy('date','asc')
@@ -660,24 +700,29 @@ document.getElementById('bulkSubmit').addEventListener('click', async ()=>{
   lines.forEach(line=>{
     const cols = line.split('\t');
     if(cols.length < 12){ fail++; return; }
-    const date = parseDateFlexible(cols[0], year);
+    let dateList = null;
+    const singleDate = parseDateFlexible(cols[0], year);
+    if(singleDate) dateList = [singleDate];
+    else dateList = parseDateRange(cols[0], year);
     // cols[1] = 요일 (무시, 자동계산)
     const periodFlags = cols.slice(2,9); // 1~7교시
     const dept = (cols[9]||'').trim();
     const eventName = (cols[10]||'').trim();
     const note = (cols[11]||'').trim();
 
-    if(!date || !eventName){ fail++; return; }
+    if(!dateList || !eventName){ fail++; return; }
     const periods = [];
     periodFlags.forEach((v,idx)=>{ if(isChecked(v)) periods.push(idx+1); });
     // 교시가 하나도 체크되지 않은 행도 저장합니다 (비고란에 시간이 텍스트로만 적힌 경우가 많음)
 
-    batchArr.push({
-      date, dayOfWeek: dayOfWeek(date), semester: getSemester(date),
-      periods, department: dept, eventName, note,
-      passwordHash,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    dateList.forEach(date=>{
+      batchArr.push({
+        date, dayOfWeek: dayOfWeek(date), semester: getSemester(date),
+        periods, department: dept, eventName, note,
+        passwordHash,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
     });
     ok++;
   });
@@ -730,15 +775,20 @@ document.getElementById('bulk_file').addEventListener('change', function(e){
         const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true, defval: '' });
         rows.forEach(row=>{
           if(!row || row.length===0) return;
-          const date = parseDateFlexible(row[0], yearFallback);
-          if(!date){ skipped++; return; } // 헤더행이나 인식 불가 행은 건너뜀
+          let dateList = null;
+          const singleDate = parseDateFlexible(row[0], yearFallback);
+          if(singleDate) dateList = [singleDate];
+          else dateList = parseDateRange(row[0], yearFallback);
+          if(!dateList){ skipped++; return; } // 헤더행이나 인식 불가 행은 건너뜀
           // 열 순서: 일자, 요일, 1~7교시(7칸), 부서명, 행사명, 비고
-          const cells = [ date, '' ];
-          for(let i=2;i<=8;i++){ cells.push(isChecked(row[i]) ? 'O' : ''); }
-          cells.push(String(row[9]!==undefined ? row[9] : '').trim());   // 부서명
-          cells.push(String(row[10]!==undefined ? row[10] : '').trim()); // 행사명
-          cells.push(String(row[11]!==undefined ? row[11] : '').trim()); // 비고
-          lines.push(cells.join('\t'));
+          const periodCells = [];
+          for(let i=2;i<=8;i++){ periodCells.push(isChecked(row[i]) ? 'O' : ''); }
+          const deptCell = String(row[9]!==undefined ? row[9] : '').trim();
+          const eventCell = String(row[10]!==undefined ? row[10] : '').trim();
+          const noteCell = String(row[11]!==undefined ? row[11] : '').trim();
+          dateList.forEach(d=>{
+            lines.push([d, '', ...periodCells, deptCell, eventCell, noteCell].join('\t'));
+          });
         });
       });
 
