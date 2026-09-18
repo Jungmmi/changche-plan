@@ -37,7 +37,14 @@
     cursor:default;
   }
   select, .periods label, table.list tbody tr, .tab-btn, .chip, button, input[type=file]{ cursor:pointer; }
-  .wrap{max-width:1080px;margin:0 auto;padding:36px 22px 90px;}
+  .wrap{max-width:1080px;margin:0 auto;padding:36px 22px 90px;position:relative;z-index:1;}
+
+  #starfield{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;}
+  .star{position:absolute;border-radius:50%;animation:twinkle ease-in-out infinite;}
+  @keyframes twinkle{
+    0%,100%{opacity:.08;transform:scale(1);}
+    50%{opacity:.85;transform:scale(1.6);}
+  }
 
   header.top{
     padding:22px 30px;margin-bottom:26px;border-radius:var(--radius);
@@ -173,9 +180,21 @@
   .lockNotice{background:var(--surface-alt);border:1px solid var(--border);border-radius:8px;padding:13px;font-size:13px;color:var(--muted);margin-bottom:12px;}
   .adminHint{font-size:12px;color:var(--muted);margin-top:6px;}
   footer.foot{text-align:center;color:var(--muted);font-size:12px;margin-top:34px;}
+
+  @media print{
+    body{background:#fff;cursor:default;}
+    .wrap{max-width:100%;padding:0;}
+    header.top, .tabs, footer.foot, #todaySection, #calPrev, #calNext, #calPrint{ display:none !important; }
+    #tab-home{ display:block !important; }
+    #tab-input, #tab-list{ display:none !important; }
+    section.card{ box-shadow:none; border:none; padding:0; margin-bottom:12px; }
+    table.cal td{ height:auto; }
+    .chip{ break-inside:avoid; }
+  }
 </style>
 </head>
 <body>
+<div id="starfield" aria-hidden="true"></div>
 <div class="wrap">
 
   <header class="top">
@@ -204,9 +223,12 @@
     <section class="card" id="calendarSection">
       <h2>달력</h2>
       <div id="calControls">
-        <button type="button" class="secondary" id="calPrev">이전 달</button>
-        <div id="calLabel"></div>
-        <button type="button" class="secondary" id="calNext">다음 달</button>
+        <div style="display:flex;align-items:center;gap:14px;">
+          <button type="button" class="secondary" id="calPrev">이전 달</button>
+          <div id="calLabel"></div>
+          <button type="button" class="secondary" id="calNext">다음 달</button>
+        </div>
+        <button type="button" class="secondary" id="calPrint">인쇄</button>
       </div>
       <table class="cal" id="calTable"></table>
       <div id="deptLegend" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;"></div>
@@ -328,10 +350,11 @@
           <option value="1학기">1학기</option>
           <option value="2학기">2학기</option>
         </select>
+        <button type="button" class="danger" id="bulkDeleteBtn" style="display:none;">선택한 <span id="selCount">0</span>개 삭제</button>
       </div>
       <table class="list" id="listTable">
         <thead>
-          <tr><th>날짜</th><th>요일</th><th>교시</th><th>부서명</th><th>행사/교육명</th><th>비고</th></tr>
+          <tr><th style="width:28px;"><input type="checkbox" id="selectAllChk"></th><th>날짜</th><th>요일</th><th>교시</th><th>부서명</th><th>행사/교육명</th><th>비고</th></tr>
         </thead>
         <tbody id="listBody"></tbody>
       </table>
@@ -523,6 +546,35 @@ const KOREAN_HOLIDAYS = {
 
 firebase.initializeApp(FIREBASE_CONFIG);
 const db = firebase.firestore();
+
+/* ---------- 재미 요소: 접속할 때마다 커서 색 랜덤 + 별빛 반짝임 ---------- */
+(function setRandomCursor(){
+  const colors = ['#2B5D6B','#B8862B','#1F9D6D','#7C3AED','#D14343','#2A5DB0','#C2410C','#0E9594'];
+  const color = colors[Math.floor(Math.random()*colors.length)];
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 26 26"><path d="M3 2 L3 21 L8.2 16.8 L11.4 23.5 L14.6 22 L11.4 15.3 L18.5 15.3 Z" fill="${color}" stroke="#1a1a1a" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+  const b64 = btoa(unescape(encodeURIComponent(svg)));
+  document.body.style.cursor = `url("data:image/svg+xml;base64,${b64}") 2 2, auto`;
+})();
+(function initStarfield(){
+  const field = document.getElementById('starfield');
+  const palette = ['#B8862B','#2C5282','#1F9D6D','#7C3AED'];
+  const count = 70;
+  for(let i=0;i<count;i++){
+    const s = document.createElement('div');
+    s.className = 'star';
+    s.style.left = (Math.random()*100).toFixed(2) + '%';
+    s.style.top = (Math.random()*100).toFixed(2) + '%';
+    const size = (Math.random()*2.4 + 1).toFixed(1);
+    s.style.width = size + 'px';
+    s.style.height = size + 'px';
+    const color = palette[Math.floor(Math.random()*palette.length)];
+    s.style.background = color;
+    s.style.boxShadow = `0 0 4px ${color}`;
+    s.style.animationDuration = (Math.random()*3 + 2).toFixed(2) + 's';
+    s.style.animationDelay = (Math.random()*4).toFixed(2) + 's';
+    field.appendChild(s);
+  }
+})();
 
 let allEntries = []; // 실시간 캐시
 let calYear, calMonth; // 0-indexed month
@@ -979,6 +1031,10 @@ function renderCalendar(){
   });
 }
 
+document.getElementById('calPrint').onclick = ()=>{
+  window.print();
+};
+
 /* ---------- 교시 카운트 (요일 x 교시 시간표) ---------- */
 const countSemSelect = document.getElementById('countSemSelect');
 SEMESTERS.forEach(s=>{
@@ -1018,8 +1074,51 @@ function renderCounts(){
   document.getElementById('countTable').innerHTML = html;
 }
 
-/* ---------- 리스트 ---------- */
+/* ---------- 리스트 (선택 삭제 포함) ---------- */
 document.getElementById('listSemFilter').addEventListener('change', renderList);
+let selectedIds = new Set();
+
+function updateBulkDeleteUI(){
+  const btn = document.getElementById('bulkDeleteBtn');
+  document.getElementById('selCount').textContent = selectedIds.size;
+  btn.style.display = selectedIds.size>0 ? 'inline-block' : 'none';
+  const all = document.querySelectorAll('.rowChk');
+  const selectAllChk = document.getElementById('selectAllChk');
+  if(all.length>0){
+    selectAllChk.checked = Array.from(all).every(c=>c.checked);
+  } else {
+    selectAllChk.checked = false;
+  }
+}
+
+document.getElementById('selectAllChk').addEventListener('change', function(){
+  const checked = this.checked;
+  document.querySelectorAll('.rowChk').forEach(chk=>{
+    chk.checked = checked;
+    if(checked) selectedIds.add(chk.dataset.id); else selectedIds.delete(chk.dataset.id);
+  });
+  updateBulkDeleteUI();
+});
+
+document.getElementById('bulkDeleteBtn').onclick = async ()=>{
+  if(selectedIds.size===0) return;
+  const pw = prompt(`선택한 ${selectedIds.size}개 항목을 삭제합니다. 관리자 비밀번호를 입력하세요.`);
+  if(pw===null) return;
+  if(pw !== ADMIN_PASSWORD){ alert('관리자 비밀번호가 일치하지 않습니다.'); return; }
+  if(!confirm(`정말 ${selectedIds.size}개 항목을 삭제할까요? 되돌릴 수 없습니다.`)) return;
+  try{
+    const ids = Array.from(selectedIds);
+    for(let i=0;i<ids.length;i+=450){
+      const batch = db.batch();
+      ids.slice(i,i+450).forEach(id=> batch.delete(db.collection('changche_entries').doc(id)));
+      await batch.commit();
+    }
+    selectedIds.clear();
+  }catch(err){
+    alert('삭제 중 오류: '+err.message);
+  }
+};
+
 function renderList(){
   const filter = document.getElementById('listSemFilter').value;
   const body = document.getElementById('listBody');
@@ -1029,12 +1128,17 @@ function renderList(){
     .slice()
     .sort((a,b)=> a.date < b.date ? -1 : (a.date>b.date?1:0));
 
+  // 더 이상 목록에 없는 항목(삭제됨 등)은 선택 해제
+  const visibleIds = new Set(rows.map(en=>en.id));
+  Array.from(selectedIds).forEach(id=>{ if(!visibleIds.has(id)) selectedIds.delete(id); });
+
   if(rows.length===0){
-    body.innerHTML=''; empty.style.display='block'; return;
+    body.innerHTML=''; empty.style.display='block'; updateBulkDeleteUI(); return;
   }
   empty.style.display='none';
   body.innerHTML = rows.map(en=>`
     <tr data-id="${en.id}">
+      <td><input type="checkbox" class="rowChk" data-id="${en.id}" ${selectedIds.has(en.id)?'checked':''}></td>
       <td>${en.date}</td>
       <td>${en.dayOfWeek}</td>
       <td>${periodsLabel(en.periods)}</td>
@@ -1044,8 +1148,16 @@ function renderList(){
     </tr>
   `).join('');
   body.querySelectorAll('tr').forEach(tr=>{
-    tr.onclick = ()=> openEditModal(tr.dataset.id);
+    tr.onclick = (e)=>{ if(e.target.classList.contains('rowChk')) return; openEditModal(tr.dataset.id); };
   });
+  body.querySelectorAll('.rowChk').forEach(chk=>{
+    chk.addEventListener('click', e=> e.stopPropagation());
+    chk.addEventListener('change', ()=>{
+      if(chk.checked) selectedIds.add(chk.dataset.id); else selectedIds.delete(chk.dataset.id);
+      updateBulkDeleteUI();
+    });
+  });
+  updateBulkDeleteUI();
 }
 
 /* ---------- 수정 모달 ---------- */
