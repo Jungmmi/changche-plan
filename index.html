@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>창의적 체험활동 계획 관리</title>
+<style>
+  :root{
+    --bg:#F5F6F4;
+    --surface:#FFFFFF;
+    --ink:#1E2A2E;
+    --muted:#5C6B6E;
+    --primary:#2B5D6B;
+    --primary-dark:#1D434E;
+    --accent:#C97B3D;
+    --border:#DCE2DE;
+    --success:#3F7D5C;
+    --danger:#B3452F;
+    --radius:6px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Segoe UI",sans-serif;
+    line-height:1.55;
+  }
+  .wrap{max-width:1040px;margin:0 auto;padding:28px 20px 80px;}
+
+  header.top{
+    padding-bottom:18px;margin-bottom:20px;border-bottom:1px solid var(--border);
+  }
+  header.top h1{font-size:20px;font-weight:700;margin:0;color:var(--primary-dark);}
+  header.top p{margin:4px 0 0;font-size:13px;color:var(--muted);}
+
+  button{
+    font-family:inherit;cursor:pointer;border:1px solid var(--primary);
+    background:var(--primary);color:#fff;border-radius:var(--radius);
+    padding:8px 14px;font-size:14px;transition:background .15s;
+  }
+  button:hover{background:var(--primary-dark);}
+  button.secondary{background:#fff;color:var(--primary);}
+  button.secondary:hover{background:#EEF3F2;}
+  button.danger{background:#fff;border-color:var(--danger);color:var(--danger);}
+  button.danger:hover{background:#FBEDE9;}
+  button:disabled{opacity:.45;cursor:not-allowed;}
+
+  .tabs{display:flex;gap:6px;margin-bottom:20px;border-bottom:1px solid var(--border);}
+  .tab-btn{
+    background:transparent;border:none;color:var(--muted);font-size:14px;font-weight:600;
+    padding:10px 4px;margin-right:18px;border-radius:0;border-bottom:2px solid transparent;
+  }
+  .tab-btn:hover{background:transparent;color:var(--primary-dark);}
+  .tab-btn.active{color:var(--primary-dark);border-bottom-color:var(--primary);}
+
+  #todayList .todayItem{
+    display:flex;gap:10px;align-items:baseline;padding:8px 0;border-bottom:1px solid var(--border);
+    font-size:14px;
+  }
+  #todayList .todayItem:last-child{border-bottom:none;}
+  #todayList .todayItem .tp{color:var(--primary-dark);font-weight:600;min-width:64px;}
+  #todayList .todayItem .td{color:var(--muted);font-size:13px;}
+
+  section.card{
+    background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+    padding:22px 24px;margin-bottom:22px;
+  }
+  section.card h2{
+    font-size:16px;margin:0 0 16px;padding-left:12px;border-left:4px solid var(--primary);
+    color:var(--primary-dark);
+  }
+
+  #guideBox ul{margin:8px 0 0;padding-left:18px;color:var(--ink);font-size:14px;}
+  #guideBox li{margin-bottom:4px;}
+  #guideBox .note{margin-top:12px;font-size:13px;color:var(--muted);}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  @media(max-width:640px){.grid2{grid-template-columns:1fr;}}
+  label{display:block;font-size:13px;color:var(--muted);margin-bottom:5px;}
+  input[type=text],input[type=date],input[type=password],textarea{
+    width:100%;padding:9px 10px;border:1px solid var(--border);border-radius:var(--radius);
+    font-size:14px;font-family:inherit;background:#fff;color:var(--ink);
+  }
+  textarea{resize:vertical;}
+  .field{margin-bottom:14px;}
+  .periods{display:flex;flex-wrap:wrap;gap:8px;}
+  .periods label{
+    display:flex;align-items:center;gap:5px;border:1px solid var(--border);
+    padding:6px 10px;border-radius:var(--radius);font-size:13px;color:var(--ink);cursor:pointer;
+  }
+  .periods input{width:auto;}
+  .formActions{display:flex;gap:10px;margin-top:6px;}
+  .msg{font-size:13px;margin-top:10px;padding:9px 12px;border-radius:var(--radius);display:none;}
+  .msg.error{display:block;background:#FBEDE9;color:var(--danger);border:1px solid #F0C9BC;}
+  .msg.success{display:block;background:#EAF3EE;color:var(--success);border:1px solid #C7E2D2;}
+
+  details.bulk{margin-top:18px;border-top:1px dashed var(--border);padding-top:16px;}
+  details.bulk summary{cursor:pointer;font-size:14px;color:var(--primary);font-weight:600;}
+  details.bulk .hint{font-size:12px;color:var(--muted);margin:10px 0;white-space:pre-line;}
+  details.bulk textarea{min-height:110px;font-family:ui-monospace,Consolas,monospace;font-size:12.5px;}
+
+  /* calendar */
+  #calControls{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+  #calLabel{font-size:15px;font-weight:700;color:var(--primary-dark);}
+  table.cal{width:100%;border-collapse:collapse;table-layout:fixed;}
+  table.cal th{font-size:12px;color:var(--muted);padding:6px 0;font-weight:600;}
+  table.cal td{
+    border:1px solid var(--border);vertical-align:top;height:92px;padding:5px;font-size:12px;
+    position:relative;
+  }
+  table.cal td.otherMonth{background:#FAFAF9;color:#B9C1BE;}
+  table.cal .dnum{font-size:12px;color:var(--muted);margin-bottom:3px;}
+  .chip{
+    background:#EAF1F0;border:1px solid #CFE0DC;color:var(--primary-dark);
+    font-size:11px;padding:2px 5px;border-radius:4px;margin-bottom:3px;cursor:pointer;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;
+  }
+  .chip:hover{background:#D9E9E5;}
+
+  /* counts */
+  table.counts{width:100%;border-collapse:collapse;font-size:13px;}
+  table.counts th,table.counts td{border:1px solid var(--border);padding:7px 10px;text-align:center;}
+  table.counts th{background:#F3F5F3;color:var(--muted);font-weight:600;}
+  select{padding:7px 9px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;font-family:inherit;}
+
+  /* list */
+  #listControls{display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;}
+  table.list{width:100%;border-collapse:collapse;font-size:13px;}
+  table.list th,table.list td{border-bottom:1px solid var(--border);padding:8px 8px;text-align:left;}
+  table.list th{color:var(--muted);font-weight:600;font-size:12px;}
+  table.list tr:hover td{background:#F7F9F8;cursor:pointer;}
+  .empty{color:var(--muted);font-size:13px;padding:14px 0;text-align:center;}
+
+  /* modal */
+  .overlay{
+    display:none;position:fixed;inset:0;background:rgba(20,28,30,.45);
+    align-items:center;justify-content:center;z-index:50;padding:16px;
+  }
+  .overlay.show{display:flex;}
+  .modal{
+    background:#fff;border-radius:var(--radius);max-width:520px;width:100%;
+    max-height:88vh;overflow-y:auto;padding:24px;
+  }
+  .modal h3{margin:0 0 14px;font-size:16px;color:var(--primary-dark);}
+  .modal .closeRow{display:flex;justify-content:flex-end;margin-top:16px;gap:8px;}
+
+  .lockNotice{background:#F3F5F3;border:1px solid var(--border);border-radius:var(--radius);padding:12px;font-size:13px;color:var(--muted);margin-bottom:10px;}
+  .adminHint{font-size:12px;color:var(--muted);margin-top:6px;}
+  footer.foot{text-align:center;color:var(--muted);font-size:12px;margin-top:30px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <h1>창의적 체험활동 계획 관리</h1>
+    <p>교내 창체 계획을 입력·확인하는 페이지입니다.</p>
+  </header>
+
+  <nav class="tabs" id="mainTabs">
+    <button type="button" class="tab-btn active" data-tab="home">홈</button>
+    <button type="button" class="tab-btn" data-tab="input">입력</button>
+    <button type="button" class="tab-btn" data-tab="list">전체목록</button>
+  </nav>
+
+  <div class="tabPanel" id="tab-home">
+
+    <!-- 안내사항 -->
+    <section class="card" id="guideBox">
+      <h2>안내사항</h2>
+      <ul>
+        <li>1학년 목요일 6~7교시 : 스포츠클럽</li>
+        <li>2학년 금요일 5~6교시 : 스포츠클럽 및 동아리</li>
+        <li>3학년 금요일 3~4교시 : 스포츠클럽</li>
+      </ul>
+      <p class="note">위 시간에는 창체수업을 입력할 수 없습니다. 부서명에 "1학년", "2학년", "3학년"이 포함된 경우 자동으로 검사합니다.</p>
+    </section>
+
+    <!-- 오늘 일정 -->
+    <section class="card" id="todaySection">
+      <h2>오늘 일정 <span id="todayDateLabel" style="font-weight:400;color:var(--muted);font-size:13px;"></span></h2>
+      <div id="todayList"></div>
+    </section>
+
+    <!-- 달력 -->
+    <section class="card" id="calendarSection">
+      <h2>달력</h2>
+      <div id="calControls">
+        <button type="button" class="secondary" id="calPrev">이전 달</button>
+        <div id="calLabel"></div>
+        <button type="button" class="secondary" id="calNext">다음 달</button>
+      </div>
+      <table class="cal" id="calTable"></table>
+    </section>
+
+    <!-- 교시 카운트 -->
+    <section class="card" id="countSection">
+      <h2>학기별 교시 사용 횟수</h2>
+      <table class="counts" id="countTable"></table>
+    </section>
+
+  </div>
+
+  <div class="tabPanel" id="tab-input" style="display:none;">
+
+    <!-- 입력 폼 -->
+    <section class="card" id="inputSection">
+      <h2>창체 계획 입력</h2>
+      <form id="entryForm">
+        <div class="grid2">
+          <div class="field">
+            <label>날짜</label>
+            <input type="date" id="f_date" required />
+          </div>
+          <div class="field">
+            <label>교시 (해당 교시 모두 선택)</label>
+            <div class="periods" id="f_periods">
+              <!-- generated -->
+            </div>
+          </div>
+        </div>
+        <div class="grid2">
+          <div class="field">
+            <label>부서명</label>
+            <input type="text" id="f_dept" placeholder="예: 1학년부, 체육부" required />
+          </div>
+          <div class="field">
+            <label>행사 또는 교육명</label>
+            <input type="text" id="f_event" required />
+          </div>
+        </div>
+        <div class="field">
+          <label>비고</label>
+          <textarea id="f_note" rows="2"></textarea>
+        </div>
+        <div class="field">
+          <label>수정용 비밀번호 (나중에 이 항목을 수정/삭제할 때 필요합니다)</label>
+          <input type="password" id="f_pw" required minlength="4" placeholder="4자 이상" />
+        </div>
+        <div class="formActions">
+          <button type="submit">저장</button>
+        </div>
+        <div class="msg" id="formMsg"></div>
+      </form>
+
+      <details class="bulk">
+        <summary>지난 데이터 한꺼번에 붙여넣기</summary>
+        <div class="hint">스프레드시트에서 복사한 내용을 아래에 붙여넣으세요. 한 줄에 한 건씩, 탭(Tab)으로 구분된 다음 순서를 따라야 합니다:
+월 / 일자 / 요일 / 1교시 / 2교시 / 3교시 / 4교시 / 5교시 / 6교시 / 7교시 / 부서명 / 행사명 / 비고
+(요일 칸은 자동 계산되므로 값이 있어도 무시됩니다. 교시 칸은 값이 있으면 "사용"으로 처리됩니다.)
+과거 데이터이므로 스포츠클럽 시간 충돌 검사는 적용되지 않습니다.</div>
+        <div class="grid2">
+          <div class="field">
+            <label>기준 연도</label>
+            <input type="text" id="bulk_year" placeholder="예: 2026" style="max-width:140px;" />
+          </div>
+          <div class="field">
+            <label>일괄 적용 비밀번호</label>
+            <input type="password" id="bulk_pw" minlength="4" placeholder="4자 이상" />
+          </div>
+        </div>
+        <div class="field">
+          <textarea id="bulk_text" placeholder="여기에 붙여넣기"></textarea>
+        </div>
+        <button type="button" id="bulkSubmit" class="secondary">일괄 업로드</button>
+        <div class="msg" id="bulkMsg"></div>
+      </details>
+    </section>
+
+  </div>
+
+  <div class="tabPanel" id="tab-list" style="display:none;">
+
+    <!-- 리스트 -->
+    <section class="card" id="listSection">
+      <h2>전체 목록 (날짜순)</h2>
+      <div id="listControls">
+        <select id="listSemFilter">
+          <option value="all">전체 학기</option>
+          <option value="1학기">1학기</option>
+          <option value="2학기">2학기</option>
+        </select>
+      </div>
+      <table class="list" id="listTable">
+        <thead>
+          <tr><th>날짜</th><th>요일</th><th>교시</th><th>부서명</th><th>행사/교육명</th><th>비고</th></tr>
+        </thead>
+        <tbody id="listBody"></tbody>
+      </table>
+      <div class="empty" id="listEmpty" style="display:none;">등록된 항목이 없습니다.</div>
+    </section>
+
+  </div>
+
+  <footer class="foot">교내 창체 계획 관리 페이지</footer>
+</div>
+
+<!-- 상세/수정 모달 -->
+<div class="overlay" id="editOverlay">
+  <div class="modal">
+    <h3>항목 상세</h3>
+    <div id="lockStage">
+      <div class="lockNotice">이 항목을 수정하거나 삭제하려면 등록 시 설정한 비밀번호를 입력하세요.</div>
+      <div class="field">
+        <label>비밀번호</label>
+        <input type="password" id="unlockPw" />
+        <p class="adminHint">관리자는 관리자 비밀번호를 입력하면 됩니다.</p>
+      </div>
+      <div class="msg error" id="unlockMsg" style="display:none;"></div>
+      <div class="closeRow">
+        <button type="button" class="secondary" id="closeModalBtn">닫기</button>
+        <button type="button" id="unlockBtn">확인</button>
+      </div>
+    </div>
+    <div id="editStage" style="display:none;">
+      <div class="grid2">
+        <div class="field">
+          <label>날짜</label>
+          <input type="date" id="e_date" />
+        </div>
+        <div class="field">
+          <label>교시</label>
+          <div class="periods" id="e_periods"></div>
+        </div>
+      </div>
+      <div class="grid2">
+        <div class="field">
+          <label>부서명</label>
+          <input type="text" id="e_dept" />
+        </div>
+        <div class="field">
+          <label>행사 또는 교육명</label>
+          <input type="text" id="e_event" />
+        </div>
+      </div>
+      <div class="field">
+        <label>비고</label>
+        <textarea id="e_note" rows="2"></textarea>
+      </div>
+      <div class="msg" id="editMsg"></div>
+      <div class="closeRow">
+        <button type="button" class="danger" id="deleteBtn">삭제</button>
+        <button type="button" class="secondary" id="closeModalBtn2">닫기</button>
+        <button type="button" id="saveEditBtn">저장</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== Firebase SDK ===================== -->
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+
+<script>
+/* =========================================================
+   설정 — 학교 상황에 맞게 이 블록만 고쳐서 쓰면 됩니다.
+   ========================================================= */
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyBMJ3ntXuL095U0UeSsqaKXMdC8cc-ongw",
+  authDomain: "changche-plan.firebaseapp.com",
+  projectId: "changche-plan",
+  storageBucket: "changche-plan.firebasestorage.app",
+  messagingSenderId: "1050457858609",
+  appId: "1:1050457858609:web:91d0bacb8249e017532b10"
+};
+
+// 관리자 마스터 비밀번호: 다른 사람이 입력한 항목도 이 비밀번호로는 항상 수정/삭제할 수 있습니다.
+const ADMIN_PASSWORD = "rydbrrhkwjdqn";
+
+// 학기 구간 (YYYY-MM-DD, 양쪽 포함)
+const SEMESTERS = [
+  { name: "1학기", start: "2026-03-01", end: "2026-07-20" },
+  { name: "2학기", start: "2026-08-18", end: "2027-01-07" }
+];
+
+// 스포츠클럽 등 창체 입력 금지 시간
+const BLOCKED_SLOTS = [
+  { grade: "1", day: "목", periods: [6,7], label: "1학년 목요일 6~7교시 스포츠클럽" },
+  { grade: "2", day: "금", periods: [5,6], label: "2학년 금요일 5~6교시 스포츠클럽 및 동아리" },
+  { grade: "3", day: "금", periods: [3,4], label: "3학년 금요일 3~4교시 스포츠클럽" }
+];
+/* ========================================================= */
+
+firebase.initializeApp(FIREBASE_CONFIG);
+const db = firebase.firestore();
+
+let allEntries = []; // 실시간 캐시
+let calYear, calMonth; // 0-indexed month
+
+const DAY_NAMES = ['일','월','화','수','목','금','토'];
+
+/* ---------- 유틸 ---------- */
+function dayOfWeek(dateStr){
+  const d = new Date(dateStr+'T00:00:00');
+  return DAY_NAMES[d.getDay()];
+}
+function getSemester(dateStr){
+  for(const s of SEMESTERS){
+    if(dateStr >= s.start && dateStr <= s.end) return s.name;
+  }
+  return '학기 외';
+}
+function detectGrades(deptText){
+  const found = [];
+  ['1','2','3'].forEach(g=>{
+    if(deptText.includes(g+'학년')) found.push(g);
+  });
+  return found;
+}
+function checkConflicts(dateStr, periods, deptText){
+  const dow = dayOfWeek(dateStr);
+  const grades = detectGrades(deptText);
+  if(grades.length===0) return [];
+  const hits = [];
+  BLOCKED_SLOTS.forEach(rule=>{
+    if(grades.includes(rule.grade) && rule.day===dow){
+      const overlap = periods.some(p=>rule.periods.includes(p));
+      if(overlap) hits.push(rule.label);
+    }
+  });
+  return hits;
+}
+async function sha256(text){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+function periodsLabel(arr){
+  return arr.slice().sort((a,b)=>a-b).map(p=>p+'교시').join(', ');
+}
+function escapeHtml(s){
+  return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/* ---------- Firestore 실시간 구독 (페이지 열리면 바로 시작) ---------- */
+db.collection('changche_entries').orderBy('date','asc')
+  .onSnapshot(snap=>{
+    allEntries = snap.docs.map(d=>({ id:d.id, ...d.data() }));
+    renderToday();
+    renderCalendar();
+    renderCounts();
+    renderList();
+  }, err=>{
+    console.error(err);
+  });
+
+/* ---------- 입력 폼 ---------- */
+const periodsWrap = document.getElementById('f_periods');
+for(let p=1;p<=7;p++){
+  const lab = document.createElement('label');
+  lab.innerHTML = `<input type="checkbox" value="${p}"> ${p}교시`;
+  periodsWrap.appendChild(lab);
+}
+document.getElementById('f_date').valueAsDate = new Date();
+
+document.getElementById('entryForm').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const msg = document.getElementById('formMsg');
+  msg.className = 'msg'; msg.style.display='none';
+
+  const date = document.getElementById('f_date').value;
+  const periods = Array.from(periodsWrap.querySelectorAll('input:checked')).map(i=>parseInt(i.value));
+  const dept = document.getElementById('f_dept').value.trim();
+  const event = document.getElementById('f_event').value.trim();
+  const note = document.getElementById('f_note').value.trim();
+  const pw = document.getElementById('f_pw').value;
+
+  if(!date || periods.length===0 || !dept || !event || pw.length<4){
+    msg.textContent = '날짜, 교시, 부서명, 행사명, 4자 이상의 비밀번호를 모두 입력해주세요.';
+    msg.className = 'msg error'; return;
+  }
+
+  const conflicts = checkConflicts(date, periods, dept);
+  if(conflicts.length>0){
+    msg.innerHTML = '입력할 수 없습니다. 다음 시간과 겹칩니다: <br>' + conflicts.join('<br>');
+    msg.className = 'msg error'; return;
+  }
+
+  const passwordHash = await sha256(pw);
+  try{
+    await db.collection('changche_entries').add({
+      date, dayOfWeek: dayOfWeek(date), semester: getSemester(date),
+      periods, department: dept, eventName: event, note,
+      passwordHash,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    document.getElementById('entryForm').reset();
+    document.getElementById('f_date').valueAsDate = new Date();
+    msg.textContent = '저장되었습니다.';
+    msg.className = 'msg success';
+  }catch(err){
+    msg.textContent = '저장 중 오류: ' + err.message;
+    msg.className = 'msg error';
+  }
+});
+
+/* ---------- 일괄 붙여넣기 ---------- */
+document.getElementById('bulkSubmit').addEventListener('click', async ()=>{
+  const msg = document.getElementById('bulkMsg');
+  msg.className='msg'; msg.style.display='none';
+  const year = document.getElementById('bulk_year').value.trim();
+  const pw = document.getElementById('bulk_pw').value;
+  const raw = document.getElementById('bulk_text').value;
+
+  if(!/^\d{4}$/.test(year) || pw.length<4 || !raw.trim()){
+    msg.textContent = '기준 연도(4자리), 비밀번호(4자 이상), 붙여넣을 내용을 확인해주세요.';
+    msg.className='msg error'; return;
+  }
+  const passwordHash = await sha256(pw);
+  const lines = raw.split('\n').map(l=>l.trim()).filter(l=>l.length>0);
+  let ok=0, fail=0;
+  const batchArr = [];
+
+  lines.forEach(line=>{
+    const cols = line.split('\t');
+    if(cols.length < 13){ fail++; return; }
+    const month = parseInt(cols[0]);
+    const day = parseInt(cols[1]);
+    // cols[2] = 요일 (무시, 자동계산)
+    const periodFlags = cols.slice(3,10); // 1~7교시
+    const dept = (cols[10]||'').trim();
+    const eventName = (cols[11]||'').trim();
+    const note = (cols[12]||'').trim();
+
+    if(!month || !day || !dept || !eventName){ fail++; return; }
+    const mm = String(month).padStart(2,'0');
+    const dd = String(day).padStart(2,'0');
+    const date = `${year}-${mm}-${dd}`;
+    const periods = [];
+    periodFlags.forEach((v,idx)=>{ if(v && v.trim()!=='') periods.push(idx+1); });
+    if(periods.length===0){ fail++; return; }
+
+    batchArr.push({
+      date, dayOfWeek: dayOfWeek(date), semester: getSemester(date),
+      periods, department: dept, eventName, note,
+      passwordHash,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    ok++;
+  });
+
+  try{
+    for(let i=0;i<batchArr.length;i+=450){
+      const batch = db.batch();
+      batchArr.slice(i,i+450).forEach(entry=>{
+        const ref = db.collection('changche_entries').doc();
+        batch.set(ref, entry);
+      });
+      await batch.commit();
+    }
+    msg.textContent = `업로드 완료: ${ok}건 성공, ${fail}건 형식 오류로 건너뜀.`;
+    msg.className='msg success';
+    document.getElementById('bulk_text').value='';
+  }catch(err){
+    msg.textContent = '업로드 중 오류: ' + err.message;
+    msg.className='msg error';
+  }
+});
+
+/* ---------- 오늘 일정 ---------- */
+function todayStr(){
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function renderToday(){
+  const ts = todayStr();
+  document.getElementById('todayDateLabel').textContent = `${ts} (${dayOfWeek(ts)})`;
+  const items = allEntries.filter(en=>en.date===ts).sort((a,b)=> Math.min(...a.periods)-Math.min(...b.periods));
+  const wrap = document.getElementById('todayList');
+  if(items.length===0){
+    wrap.innerHTML = '<p class="empty" style="padding:6px 0;">오늘 예정된 창체 일정이 없습니다.</p>';
+    return;
+  }
+  wrap.innerHTML = items.map(en=>`
+    <div class="todayItem">
+      <span class="tp">${periodsLabel(en.periods)}</span>
+      <span>${escapeHtml(en.department)} · ${escapeHtml(en.eventName)}</span>
+      ${en.note ? `<span class="td">${escapeHtml(en.note)}</span>` : ''}
+    </div>
+  `).join('');
+}
+
+/* ---------- 탭 전환 ---------- */
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tabPanel').forEach(p=>p.style.display='none');
+    btn.classList.add('active');
+    document.getElementById('tab-'+btn.dataset.tab).style.display='block';
+  });
+});
+
+/* ---------- 달력 ---------- */
+function initCalDefault(){
+  const now = new Date();
+  calYear = now.getFullYear();
+  calMonth = now.getMonth();
+}
+initCalDefault();
+
+document.getElementById('calPrev').onclick = ()=>{
+  calMonth--; if(calMonth<0){calMonth=11; calYear--;}
+  renderCalendar();
+};
+document.getElementById('calNext').onclick = ()=>{
+  calMonth++; if(calMonth>11){calMonth=0; calYear++;}
+  renderCalendar();
+};
+
+function renderCalendar(){
+  document.getElementById('calLabel').textContent = `${calYear}년 ${calMonth+1}월`;
+  const table = document.getElementById('calTable');
+  const firstDay = new Date(calYear, calMonth, 1);
+  const startOffset = firstDay.getDay(); // 0=일
+  const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
+  const daysInPrevMonth = new Date(calYear, calMonth, 0).getDate();
+
+  const byDate = {};
+  allEntries.forEach(en=>{
+    (byDate[en.date] = byDate[en.date] || []).push(en);
+  });
+
+  let html = '<thead><tr>' + DAY_NAMES.map(d=>`<th>${d}</th>`).join('') + '</tr></thead><tbody>';
+  let dayCounter = 1 - startOffset;
+  for(let row=0; row<6; row++){
+    html += '<tr>';
+    for(let col=0; col<7; col++){
+      let cellMonth = calMonth, cellYear = calYear, dNum = dayCounter;
+      let cls = '';
+      if(dayCounter < 1){ dNum = daysInPrevMonth + dayCounter; cls='otherMonth'; cellMonth = calMonth-1; }
+      else if(dayCounter > daysInMonth){ dNum = dayCounter - daysInMonth; cls='otherMonth'; cellMonth = calMonth+1; }
+      let cm = cellMonth; let cy = cellYear;
+      if(cm<0){cm=11; cy--;} if(cm>11){cm=0; cy++;}
+      const dateStr = `${cy}-${String(cm+1).padStart(2,'0')}-${String(dNum).padStart(2,'0')}`;
+      const items = byDate[dateStr] || [];
+      html += `<td class="${cls}"><div class="dnum">${dNum}</div>`;
+      items.slice(0,4).forEach(it=>{
+        html += `<span class="chip" data-id="${it.id}">${periodsLabel(it.periods)} ${it.eventName}</span>`;
+      });
+      if(items.length>4) html += `<div style="font-size:11px;color:var(--muted);">+${items.length-4}건 더</div>`;
+      html += '</td>';
+      dayCounter++;
+    }
+    html += '</tr>';
+  }
+  html += '</tbody>';
+  table.innerHTML = html;
+
+  table.querySelectorAll('.chip').forEach(chip=>{
+    chip.onclick = ()=> openEditModal(chip.dataset.id);
+  });
+}
+
+/* ---------- 교시 카운트 ---------- */
+function renderCounts(){
+  const table = document.getElementById('countTable');
+  const semNames = SEMESTERS.map(s=>s.name);
+  let html = '<tr><th>교시</th>' + semNames.map(n=>`<th>${n}</th>`).join('') + '</tr>';
+  for(let p=1;p<=7;p++){
+    html += `<tr><td>${p}교시</td>`;
+    semNames.forEach(sn=>{
+      const cnt = allEntries.filter(en=> en.semester===sn && en.periods && en.periods.includes(p)).length;
+      html += `<td>${cnt}</td>`;
+    });
+    html += '</tr>';
+  }
+  table.innerHTML = html;
+}
+
+/* ---------- 리스트 ---------- */
+document.getElementById('listSemFilter').addEventListener('change', renderList);
+function renderList(){
+  const filter = document.getElementById('listSemFilter').value;
+  const body = document.getElementById('listBody');
+  const empty = document.getElementById('listEmpty');
+  const rows = allEntries
+    .filter(en => filter==='all' || en.semester===filter)
+    .slice()
+    .sort((a,b)=> a.date < b.date ? -1 : (a.date>b.date?1:0));
+
+  if(rows.length===0){
+    body.innerHTML=''; empty.style.display='block'; return;
+  }
+  empty.style.display='none';
+  body.innerHTML = rows.map(en=>`
+    <tr data-id="${en.id}">
+      <td>${en.date}</td>
+      <td>${en.dayOfWeek}</td>
+      <td>${periodsLabel(en.periods)}</td>
+      <td>${escapeHtml(en.department)}</td>
+      <td>${escapeHtml(en.eventName)}</td>
+      <td>${escapeHtml(en.note||'')}</td>
+    </tr>
+  `).join('');
+  body.querySelectorAll('tr').forEach(tr=>{
+    tr.onclick = ()=> openEditModal(tr.dataset.id);
+  });
+}
+
+/* ---------- 수정 모달 ---------- */
+let activeEntry = null;
+const overlay = document.getElementById('editOverlay');
+const ePeriodsWrap = document.getElementById('e_periods');
+for(let p=1;p<=7;p++){
+  const lab = document.createElement('label');
+  lab.innerHTML = `<input type="checkbox" value="${p}"> ${p}교시`;
+  ePeriodsWrap.appendChild(lab);
+}
+
+function openEditModal(id){
+  activeEntry = allEntries.find(e=>e.id===id);
+  if(!activeEntry) return;
+  document.getElementById('unlockPw').value='';
+  document.getElementById('unlockMsg').style.display='none';
+  document.getElementById('lockStage').style.display='block';
+  document.getElementById('editStage').style.display='none';
+  overlay.classList.add('show');
+}
+function closeModal(){
+  overlay.classList.remove('show');
+  activeEntry = null;
+}
+document.getElementById('closeModalBtn').onclick = closeModal;
+document.getElementById('closeModalBtn2').onclick = closeModal;
+
+document.getElementById('unlockBtn').onclick = async ()=>{
+  const pw = document.getElementById('unlockPw').value;
+  if(pw === ADMIN_PASSWORD){
+    unlockAndFill();
+    return;
+  }
+  const hash = await sha256(pw);
+  if(hash === activeEntry.passwordHash){
+    unlockAndFill();
+  } else {
+    const m = document.getElementById('unlockMsg');
+    m.textContent = '비밀번호가 일치하지 않습니다.';
+    m.style.display='block';
+  }
+};
+
+function unlockAndFill(){
+  document.getElementById('lockStage').style.display='none';
+  document.getElementById('editStage').style.display='block';
+  document.getElementById('e_date').value = activeEntry.date;
+  document.getElementById('e_dept').value = activeEntry.department;
+  document.getElementById('e_event').value = activeEntry.eventName;
+  document.getElementById('e_note').value = activeEntry.note||'';
+  ePeriodsWrap.querySelectorAll('input').forEach(inp=>{
+    inp.checked = activeEntry.periods.includes(parseInt(inp.value));
+  });
+  document.getElementById('editMsg').className='msg'; document.getElementById('editMsg').style.display='none';
+}
+
+document.getElementById('saveEditBtn').onclick = async ()=>{
+  const msg = document.getElementById('editMsg');
+  const date = document.getElementById('e_date').value;
+  const periods = Array.from(ePeriodsWrap.querySelectorAll('input:checked')).map(i=>parseInt(i.value));
+  const dept = document.getElementById('e_dept').value.trim();
+  const event = document.getElementById('e_event').value.trim();
+  const note = document.getElementById('e_note').value.trim();
+
+  if(!date || periods.length===0 || !dept || !event){
+    msg.textContent='필수 항목을 모두 입력해주세요.'; msg.className='msg error'; return;
+  }
+  const conflicts = checkConflicts(date, periods, dept);
+  if(conflicts.length>0){
+    msg.innerHTML = '저장할 수 없습니다. 다음 시간과 겹칩니다: <br>' + conflicts.join('<br>');
+    msg.className='msg error'; return;
+  }
+  try{
+    await db.collection('changche_entries').doc(activeEntry.id).update({
+      date, dayOfWeek: dayOfWeek(date), semester: getSemester(date),
+      periods, department: dept, eventName: event, note,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    closeModal();
+  }catch(err){
+    msg.textContent = '저장 중 오류: '+err.message; msg.className='msg error';
+  }
+};
+
+document.getElementById('deleteBtn').onclick = async ()=>{
+  if(!confirm('이 항목을 삭제할까요? 되돌릴 수 없습니다.')) return;
+  try{
+    await db.collection('changche_entries').doc(activeEntry.id).delete();
+    closeModal();
+  }catch(err){
+    alert('삭제 중 오류: '+err.message);
+  }
+};
+</script>
+</body>
+</html>
