@@ -166,6 +166,9 @@
   table.list{width:100%;border-collapse:collapse;font-size:13px;}
   table.list th,table.list td{border-bottom:1px solid var(--border);padding:10px 8px;text-align:left;}
   table.list th{color:var(--muted);font-weight:700;font-size:11.5px;letter-spacing:.2px;}
+  table.list th.sortable{cursor:pointer;user-select:none;}
+  table.list th.sortable:hover{color:var(--primary);}
+  .sortArrow{color:var(--primary);}
   table.list tr:hover td{background:var(--surface-alt);cursor:pointer;}
   .empty{color:var(--muted);font-size:13px;padding:16px 0;text-align:center;}
 
@@ -262,7 +265,7 @@
     <section class="card" id="inputSection">
       <h2>창체 계획 입력</h2>
       <p class="note" style="margin:-8px 0 18px;background:var(--surface-alt);padding:10px 12px;border-radius:8px;font-size:12.5px;color:var(--muted);">저장한 내용은 홈 화면의 달력이나 전체목록에서 클릭해서 수정할 수 있습니다.</p>
-      <form id="entryForm" autocomplete="off">
+      <form id="entryForm" autocomplete="off" novalidate>
         <input type="text" name="fake-username" autocomplete="username" style="display:none">
         <input type="password" name="fake-password" autocomplete="new-password" style="display:none">
         <div class="grid2">
@@ -373,7 +376,7 @@
       </div>
       <table class="list" id="listTable">
         <thead>
-          <tr><th style="width:28px;"><input type="checkbox" id="selectAllChk"></th><th>날짜</th><th>요일</th><th>교시</th><th>부서명</th><th>행사/교육명</th><th>비고</th></tr>
+          <tr><th style="width:28px;"><input type="checkbox" id="selectAllChk"></th><th class="sortable" data-col="date">날짜<span class="sortArrow"></span></th><th class="sortable" data-col="dayOfWeek">요일<span class="sortArrow"></span></th><th>교시</th><th class="sortable" data-col="department">부서명<span class="sortArrow"></span></th><th class="sortable" data-col="eventName">행사/교육명<span class="sortArrow"></span></th><th>비고</th></tr>
         </thead>
         <tbody id="listBody"></tbody>
       </table>
@@ -758,8 +761,14 @@ document.getElementById('entryForm').addEventListener('submit', async (e)=>{
   const note = document.getElementById('f_note').value.trim();
   const pw = document.getElementById('f_pw').value;
 
-  if(!date || periods.length===0 || !dept || !event || pw.length<4){
-    msg.textContent = '날짜, 교시, 부서명, 행사명, 4자 이상의 비밀번호를 모두 입력해주세요.';
+  const missing = [];
+  if(!date) missing.push('날짜');
+  if(periods.length===0) missing.push('교시');
+  if(!dept) missing.push('부서명');
+  if(!event) missing.push('행사 또는 교육명');
+  if(pw.length<4) missing.push('비밀번호(4자 이상)');
+  if(missing.length>0){
+    msg.textContent = '다음 항목을 확인해주세요: ' + missing.join(', ');
     msg.className = 'msg error'; return;
   }
 
@@ -1163,6 +1172,27 @@ document.getElementById('bulkDeleteBtn').onclick = async ()=>{
   }
 };
 
+let listSort = { col: 'date', dir: 'desc' }; // 기본: 최신 날짜가 위로
+
+document.querySelectorAll('table.list th.sortable').forEach(th=>{
+  th.addEventListener('click', ()=>{
+    const col = th.dataset.col;
+    if(listSort.col === col){
+      listSort.dir = listSort.dir === 'asc' ? 'desc' : 'asc';
+    } else {
+      listSort.col = col;
+      listSort.dir = 'asc';
+    }
+    renderList();
+  });
+});
+function updateSortIndicators(){
+  document.querySelectorAll('table.list th.sortable').forEach(th=>{
+    const arrow = th.querySelector('.sortArrow');
+    arrow.textContent = (th.dataset.col === listSort.col) ? (listSort.dir==='asc' ? ' ▲' : ' ▼') : '';
+  });
+}
+
 function renderList(){
   const filter = document.getElementById('listSemFilter').value;
   const body = document.getElementById('listBody');
@@ -1170,7 +1200,19 @@ function renderList(){
   const rows = allEntries
     .filter(en => filter==='all' || en.semester===filter)
     .slice()
-    .sort((a,b)=> a.date < b.date ? -1 : (a.date>b.date?1:0));
+    .sort((a,b)=>{
+      let va = a[listSort.col], vb = b[listSort.col];
+      if(va==null) va=''; if(vb==null) vb='';
+      let r = va < vb ? -1 : (va > vb ? 1 : 0);
+      if(listSort.col==='date' && r===0){
+        // 같은 날짜면 교시 빠른 순으로 보조 정렬
+        const pa = (a.periods&&a.periods.length)?Math.min(...a.periods):99;
+        const pb = (b.periods&&b.periods.length)?Math.min(...b.periods):99;
+        r = pa<pb?-1:(pa>pb?1:0);
+      }
+      return listSort.dir==='asc' ? r : -r;
+    });
+  updateSortIndicators();
 
   // 더 이상 목록에 없는 항목(삭제됨 등)은 선택 해제
   const visibleIds = new Set(rows.map(en=>en.id));
