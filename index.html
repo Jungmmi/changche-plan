@@ -563,6 +563,19 @@ async function sha256(text){
 function periodsLabel(arr){
   return arr.slice().sort((a,b)=>a-b).map(p=>p+'교시').join(', ');
 }
+// 달력 칩에 쓸 축약형: 연속 구간은 "2~5교시"처럼 묶음
+function periodsCompact(arr){
+  if(!arr || arr.length===0) return '';
+  const sorted = arr.slice().sort((a,b)=>a-b);
+  const groups = [];
+  let start = sorted[0], prev = sorted[0];
+  for(let i=1;i<=sorted.length;i++){
+    if(i<sorted.length && sorted[i]===prev+1){ prev = sorted[i]; continue; }
+    groups.push(start===prev ? `${start}` : `${start}~${prev}`);
+    if(i<sorted.length){ start = sorted[i]; prev = sorted[i]; }
+  }
+  return groups.join(',') + '교시';
+}
 function escapeHtml(s){
   return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
@@ -895,7 +908,15 @@ function renderCalendar(){
       let cm = cellMonth; let cy = cellYear;
       if(cm<0){cm=11; cy--;} if(cm>11){cm=0; cy++;}
       const dateStr = `${cy}-${String(cm+1).padStart(2,'0')}-${String(dNum).padStart(2,'0')}`;
-      const items = byDate[dateStr] || [];
+      const items = (byDate[dateStr] || []).slice().sort((a,b)=>{
+        const aNo = !a.periods || a.periods.length===0;
+        const bNo = !b.periods || b.periods.length===0;
+        if(aNo && !bNo) return -1;
+        if(!aNo && bNo) return 1;
+        const aMin = aNo ? 0 : Math.min(...a.periods);
+        const bMin = bNo ? 0 : Math.min(...b.periods);
+        return aMin - bMin;
+      });
       const holidayName = KOREAN_HOLIDAYS[dateStr];
       let dnumStyle = '';
       if(cls !== 'otherMonth'){
@@ -906,7 +927,10 @@ function renderCalendar(){
       if(holidayName && cls!=='otherMonth') html += `<div style="font-size:10.5px;color:var(--danger);margin-bottom:3px;">${holidayName}</div>`;
       items.slice(0,4).forEach(it=>{
         const c = deptColor(it.department);
-        html += `<span class="chip" data-id="${it.id}" style="background:${c.bg};color:${c.text};border-color:${c.text}33;">${periodsLabel(it.periods)} ${it.eventName}</span>`;
+        const hasPeriods = it.periods && it.periods.length>0;
+        const label = hasPeriods ? `${periodsCompact(it.periods)} : ${it.eventName}` : it.eventName;
+        const extraStyle = hasPeriods ? '' : 'font-weight:700;';
+        html += `<span class="chip" data-id="${it.id}" style="background:${c.bg};color:${c.text};border-color:${c.text}33;${extraStyle}">${label}</span>`;
       });
       if(items.length>4) html += `<div style="font-size:11px;color:var(--muted);">+${items.length-4}건 더</div>`;
       html += '</td>';
