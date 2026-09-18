@@ -261,8 +261,9 @@
       <details class="bulk">
         <summary>지난 데이터 한꺼번에 붙여넣기</summary>
         <div class="hint">스프레드시트에서 복사한 내용을 아래에 붙여넣으세요. 한 줄에 한 건씩, 탭(Tab)으로 구분된 다음 순서를 따라야 합니다:
-월 / 일자 / 요일 / 1교시 / 2교시 / 3교시 / 4교시 / 5교시 / 6교시 / 7교시 / 부서명 / 행사명 / 비고
+일자 / 요일 / 1교시 / 2교시 / 3교시 / 4교시 / 5교시 / 6교시 / 7교시 / 부서명 / 행사명 / 비고
 (요일 칸은 자동 계산되므로 값이 있어도 무시됩니다. 교시 칸은 값이 있으면 "사용"으로 처리됩니다.)
+일자는 "2026-04-07", "2026.4.7", "2026. 4. 7." 등 다양한 표기를 인식합니다. 연도 없이 "4.7"처럼만 써도 아래 "기준 연도"를 사용해 채워줍니다.
 과거 데이터이므로 스포츠클럽 시간 충돌 검사는 적용되지 않습니다.</div>
         <form id="bulkForm" autocomplete="off" onsubmit="return false;">
           <input type="text" name="fake-username-2" autocomplete="username" style="display:none">
@@ -553,6 +554,28 @@ function periodsLabel(arr){
 function escapeHtml(s){
   return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
+function pad2(n){ return String(n).padStart(2,'0'); }
+// 다양한 표기(엑셀 날짜형, "2026. 4. 1.", "2026.4.30", "4.3" 등)를 YYYY-MM-DD로 변환
+function parseDateFlexible(raw, yearFallback){
+  if(raw instanceof Date && !isNaN(raw)){
+    return `${raw.getFullYear()}-${pad2(raw.getMonth()+1)}-${pad2(raw.getDate())}`;
+  }
+  const s = String(raw==null ? '' : raw).trim();
+  if(!s) return null;
+  let m = s.match(/^(\d{4})\s*[.\-\/]\s*(\d{1,2})\s*[.\-\/]\s*(\d{1,2})\s*\.?\s*$/);
+  if(m) return `${m[1]}-${pad2(m[2])}-${pad2(m[3])}`;
+  m = s.match(/^(\d{1,2})\s*[.\-\/]\s*(\d{1,2})\s*\.?\s*$/);
+  if(m && yearFallback) return `${yearFallback}-${pad2(m[1])}-${pad2(m[2])}`;
+  return null;
+}
+// 교시 칸이 체크된 것으로 볼지(TRUE, O, 1 등)
+function isChecked(v){
+  if(v===true) return true;
+  if(v===false || v==null) return false;
+  const s = String(v).trim().toUpperCase();
+  if(s==='' || s==='FALSE' || s==='0') return false;
+  return true;
+}
 
 /* ---------- Firestore 실시간 구독 (페이지 열리면 바로 시작) ---------- */
 db.collection('changche_entries').orderBy('date','asc')
@@ -636,22 +659,18 @@ document.getElementById('bulkSubmit').addEventListener('click', async ()=>{
 
   lines.forEach(line=>{
     const cols = line.split('\t');
-    if(cols.length < 13){ fail++; return; }
-    const month = parseInt(cols[0]);
-    const day = parseInt(cols[1]);
-    // cols[2] = 요일 (무시, 자동계산)
-    const periodFlags = cols.slice(3,10); // 1~7교시
-    const dept = (cols[10]||'').trim();
-    const eventName = (cols[11]||'').trim();
-    const note = (cols[12]||'').trim();
+    if(cols.length < 12){ fail++; return; }
+    const date = parseDateFlexible(cols[0], year);
+    // cols[1] = 요일 (무시, 자동계산)
+    const periodFlags = cols.slice(2,9); // 1~7교시
+    const dept = (cols[9]||'').trim();
+    const eventName = (cols[10]||'').trim();
+    const note = (cols[11]||'').trim();
 
-    if(!month || !day || !dept || !eventName){ fail++; return; }
-    const mm = String(month).padStart(2,'0');
-    const dd = String(day).padStart(2,'0');
-    const date = `${year}-${mm}-${dd}`;
+    if(!date || !eventName){ fail++; return; }
     const periods = [];
-    periodFlags.forEach((v,idx)=>{ if(v && v.trim()!=='') periods.push(idx+1); });
-    if(periods.length===0){ fail++; return; }
+    periodFlags.forEach((v,idx)=>{ if(isChecked(v)) periods.push(idx+1); });
+    // 교시가 하나도 체크되지 않은 행도 저장합니다 (비고란에 시간이 텍스트로만 적힌 경우가 많음)
 
     batchArr.push({
       date, dayOfWeek: dayOfWeek(date), semester: getSemester(date),
@@ -687,6 +706,7 @@ document.getElementById('bulk_file').addEventListener('change', function(e){
   if(!file) return;
   const msg = document.getElementById('bulkMsg');
   msg.className='msg'; msg.style.display='none';
+  const yearFallback = document.getElementById('bulk_year').value.trim() || null;
 
   const reader = new FileReader();
   reader.onload = function(evt){
@@ -695,42 +715,41 @@ document.getElementById('bulk_file').addEventListener('change', function(e){
       const isCSV = /\.csv$/i.test(file.name);
       let wb;
       if(isCSV){
-        // CSV는 한글이 EUC-KR(완성형)로 저장된 경우가 많아 UTF-8로 먼저 시도하고 실패하면 EUC-KR로 재시도
         let text;
-        try{
-          text = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
-        }catch(e){
-          text = new TextDecoder('euc-kr').decode(bytes);
-        }
-        wb = XLSX.read(text, { type: 'string' });
+        try{ text = new TextDecoder('utf-8', { fatal: true }).decode(bytes); }
+        catch(e){ text = new TextDecoder('euc-kr').decode(bytes); }
+        wb = XLSX.read(text, { type: 'string', cellDates: true });
       } else {
-        wb = XLSX.read(bytes, { type: 'array' });
+        wb = XLSX.read(bytes, { type: 'array', cellDates: true });
       }
-      const firstSheetName = wb.SheetNames[0];
-      const sheet = wb.Sheets[firstSheetName];
-      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: '' });
 
       const lines = [];
-      rows.forEach(row=>{
-        if(!row || row.length===0) return;
-        const first = String(row[0]||'').trim();
-        // 첫 칸이 1~12 사이 숫자(월)가 아니면 머리글/빈 줄로 보고 건너뜀
-        const monthNum = parseInt(first);
-        if(!monthNum || monthNum < 1 || monthNum > 12) return;
-        // 13칸(월~비고)까지 맞춰서 탭으로 이어붙임
-        const cells = [];
-        for(let i=0;i<13;i++){ cells.push(String(row[i] !== undefined ? row[i] : '').trim()); }
-        lines.push(cells.join('\t'));
+      let skipped = 0;
+      wb.SheetNames.forEach(sheetName=>{
+        const sheet = wb.Sheets[sheetName];
+        const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true, defval: '' });
+        rows.forEach(row=>{
+          if(!row || row.length===0) return;
+          const date = parseDateFlexible(row[0], yearFallback);
+          if(!date){ skipped++; return; } // 헤더행이나 인식 불가 행은 건너뜀
+          // 열 순서: 일자, 요일, 1~7교시(7칸), 부서명, 행사명, 비고
+          const cells = [ date, '' ];
+          for(let i=2;i<=8;i++){ cells.push(isChecked(row[i]) ? 'O' : ''); }
+          cells.push(String(row[9]!==undefined ? row[9] : '').trim());   // 부서명
+          cells.push(String(row[10]!==undefined ? row[10] : '').trim()); // 행사명
+          cells.push(String(row[11]!==undefined ? row[11] : '').trim()); // 비고
+          lines.push(cells.join('\t'));
+        });
       });
 
       if(lines.length===0){
-        msg.textContent = '파일에서 인식 가능한 행을 찾지 못했습니다. 첫 칸이 월(1~12) 숫자인지, 열 순서가 월/일자/요일/1~7교시/부서명/행사명/비고인지 확인해주세요.';
+        msg.textContent = '파일에서 인식 가능한 행을 찾지 못했습니다. 열 순서가 일자/요일/1~7교시/부서명/행사명/비고인지, 일자 칸에 날짜가 들어있는지 확인해주세요. 연도 없이 "4.7"처럼만 적힌 셀이 있다면 위 "기준 연도"를 먼저 입력한 뒤 파일을 다시 선택해주세요.';
         msg.className='msg error';
         return;
       }
       document.getElementById('bulk_text').value = lines.join('\n');
       const preview = lines[0].split('\t');
-      msg.innerHTML = `파일에서 ${lines.length}행을 불러왔습니다. (예시 1행 → 부서명: "${escapeHtml(preview[10]||'')}", 행사명: "${escapeHtml(preview[11]||'')}") 내용을 확인한 뒤 "일괄 업로드"를 눌러주세요.`;
+      msg.innerHTML = `파일에서 ${lines.length}행을 불러왔습니다${skipped>0 ? ` (헤더/인식불가 ${skipped}행 제외)` : ''}. (예시 1행 → 날짜: ${preview[0]}, 부서명: "${escapeHtml(preview[9]||'')}", 행사명: "${escapeHtml(preview[10]||'')}") 내용을 확인한 뒤 "일괄 업로드"를 눌러주세요.`;
       msg.className='msg success';
     }catch(err){
       msg.textContent = '파일을 읽는 중 오류: ' + err.message;
