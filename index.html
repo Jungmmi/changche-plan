@@ -330,7 +330,33 @@
 <div class="overlay" id="editOverlay">
   <div class="modal">
     <h3>항목 상세</h3>
-    <div id="lockStage">
+    <div id="detailStage">
+      <div class="field">
+        <label>날짜</label>
+        <div id="d_date" style="font-size:15px;font-weight:600;"></div>
+      </div>
+      <div class="field">
+        <label>교시</label>
+        <div id="d_periods" style="font-size:14px;"></div>
+      </div>
+      <div class="field">
+        <label>부서명</label>
+        <div id="d_dept" style="font-size:14px;"></div>
+      </div>
+      <div class="field">
+        <label>행사 또는 교육명</label>
+        <div id="d_event" style="font-size:14px;"></div>
+      </div>
+      <div class="field">
+        <label>비고</label>
+        <div id="d_note" style="font-size:14px;color:var(--muted);"></div>
+      </div>
+      <div class="closeRow">
+        <button type="button" class="secondary" id="closeModalBtnDetail">닫기</button>
+        <button type="button" id="goEditBtn">수정 / 삭제</button>
+      </div>
+    </div>
+    <div id="lockStage" style="display:none;">
       <div class="lockNotice">이 항목을 수정하거나 삭제하려면 등록 시 설정한 비밀번호를 입력하세요.</div>
       <div class="field">
         <label>비밀번호</label>
@@ -909,9 +935,15 @@ for(let p=1;p<=7;p++){
 function openEditModal(id){
   activeEntry = allEntries.find(e=>e.id===id);
   if(!activeEntry) return;
+  document.getElementById('d_date').textContent = `${activeEntry.date} (${activeEntry.dayOfWeek})`;
+  document.getElementById('d_periods').textContent = periodsLabel(activeEntry.periods);
+  document.getElementById('d_dept').textContent = activeEntry.department;
+  document.getElementById('d_event').textContent = activeEntry.eventName;
+  document.getElementById('d_note').textContent = activeEntry.note || '(없음)';
   document.getElementById('unlockPw').value='';
   document.getElementById('unlockMsg').style.display='none';
-  document.getElementById('lockStage').style.display='block';
+  document.getElementById('detailStage').style.display='block';
+  document.getElementById('lockStage').style.display='none';
   document.getElementById('editStage').style.display='none';
   overlay.classList.add('show');
 }
@@ -921,6 +953,11 @@ function closeModal(){
 }
 document.getElementById('closeModalBtn').onclick = closeModal;
 document.getElementById('closeModalBtn2').onclick = closeModal;
+document.getElementById('closeModalBtnDetail').onclick = closeModal;
+document.getElementById('goEditBtn').onclick = ()=>{
+  document.getElementById('detailStage').style.display='none';
+  document.getElementById('lockStage').style.display='block';
+};
 
 document.getElementById('unlockBtn').onclick = async ()=>{
   const pw = document.getElementById('unlockPw').value;
