@@ -25,26 +25,30 @@
   *{box-sizing:border-box;}
   body{
     margin:0;
-    background:
-      radial-gradient(circle at 12% -5%, rgba(44,82,130,.07), transparent 42%),
-      radial-gradient(circle at 105% 105%, rgba(184,134,43,.06), transparent 45%),
-      var(--bg);
-    background-attachment:fixed;
+    background:var(--bg);
     color:var(--ink);
     font-family:'Pretendard',-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Segoe UI",sans-serif;
     line-height:1.6;
     -webkit-font-smoothing:antialiased;
-    cursor:default;
   }
   select, .periods label, table.list tbody tr, .tab-btn, .chip, button, input[type=file]{ cursor:pointer; }
   .wrap{max-width:1080px;margin:0 auto;padding:36px 22px 90px;position:relative;z-index:1;}
 
-  #starfield{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;}
-  .star{position:absolute;border-radius:50%;animation:twinkle ease-in-out infinite;}
-  @keyframes twinkle{
-    0%,100%{opacity:.08;transform:scale(1);}
-    50%{opacity:.85;transform:scale(1.6);}
-  }
+  #aurora{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;}
+  .blob{position:absolute;border-radius:50%;filter:blur(70px);opacity:.32;}
+  .blob1{width:420px;height:420px;background:radial-gradient(circle, var(--primary-light), transparent 70%);top:-12%;left:-8%;animation:blobMove1 22s ease-in-out infinite alternate;}
+  .blob2{width:380px;height:380px;background:radial-gradient(circle, var(--accent), transparent 70%);bottom:-14%;right:-6%;animation:blobMove2 26s ease-in-out infinite alternate;}
+  .blob3{width:300px;height:300px;background:radial-gradient(circle, #1F9D6D, transparent 70%);top:38%;left:58%;animation:blobMove3 30s ease-in-out infinite alternate;}
+  @keyframes blobMove1{0%{transform:translate(0,0) scale(1);}100%{transform:translate(60px,40px) scale(1.15);}}
+  @keyframes blobMove2{0%{transform:translate(0,0) scale(1);}100%{transform:translate(-50px,-30px) scale(1.1);}}
+  @keyframes blobMove3{0%{transform:translate(0,0) scale(1);}100%{transform:translate(-40px,50px) scale(.9);}}
+
+  #cursorDot{position:fixed;top:0;left:0;width:16px;height:16px;border-radius:50%;pointer-events:none;z-index:9999;
+    background:radial-gradient(circle at 30% 30%, var(--accent), var(--primary));opacity:.85;
+    transition:width .22s ease, height .22s ease, opacity .22s ease;will-change:transform;}
+  #cursorDot.hoverActive{width:38px;height:38px;opacity:.5;}
+  html.custom-cursor, html.custom-cursor *{ cursor:none !important; }
+  html.custom-cursor input, html.custom-cursor textarea{ cursor:text !important; }
 
   header.top{
     padding:22px 30px;margin-bottom:26px;border-radius:var(--radius);
@@ -184,7 +188,7 @@
   @media print{
     body{background:#fff;cursor:default;}
     .wrap{max-width:100%;padding:0;}
-    header.top, .tabs, footer.foot, #todaySection, #calPrev, #calNext, #calPrint{ display:none !important; }
+    header.top, .tabs, footer.foot, #todaySection, #calPrev, #calNext, #calPrint, #aurora, #cursorDot{ display:none !important; }
     #tab-home{ display:block !important; }
     #tab-input, #tab-list{ display:none !important; }
     section.card{ box-shadow:none; border:none; padding:0; margin-bottom:12px; }
@@ -194,7 +198,12 @@
 </style>
 </head>
 <body>
-<div id="starfield" aria-hidden="true"></div>
+<div id="aurora" aria-hidden="true">
+  <div class="blob blob1"></div>
+  <div class="blob blob2"></div>
+  <div class="blob blob3"></div>
+</div>
+<div id="cursorDot"></div>
 <div class="wrap">
 
   <header class="top">
@@ -264,6 +273,15 @@
           <div class="field">
             <label>종료일 (여러 날짜에 걸쳐 반복될 때만 입력, 선택)</label>
             <input type="date" id="f_endDate" autocomplete="off" />
+          </div>
+        </div>
+        <div class="field">
+          <label>학년</label>
+          <div class="periods" id="f_grades">
+            <label><input type="checkbox" value="1"> 1학년</label>
+            <label><input type="checkbox" value="2"> 2학년</label>
+            <label><input type="checkbox" value="3"> 3학년</label>
+            <label><input type="checkbox" value="전학년"> 전학년</label>
           </div>
         </div>
         <div class="field">
@@ -376,6 +394,10 @@
         <div id="d_date" style="font-size:15px;font-weight:600;"></div>
       </div>
       <div class="field">
+        <label>학년</label>
+        <div id="d_grades" style="font-size:14px;"></div>
+      </div>
+      <div class="field">
         <label>교시</label>
         <div id="d_periods" style="font-size:14px;"></div>
       </div>
@@ -410,6 +432,15 @@
       </div>
     </div>
     <div id="editStage" style="display:none;">
+      <div class="field">
+        <label>학년</label>
+        <div class="periods" id="e_grades">
+          <label><input type="checkbox" value="1"> 1학년</label>
+          <label><input type="checkbox" value="2"> 2학년</label>
+          <label><input type="checkbox" value="3"> 3학년</label>
+          <label><input type="checkbox" value="전학년"> 전학년</label>
+        </div>
+      </div>
       <div class="grid2">
         <div class="field">
           <label>날짜</label>
@@ -547,33 +578,23 @@ const KOREAN_HOLIDAYS = {
 firebase.initializeApp(FIREBASE_CONFIG);
 const db = firebase.firestore();
 
-/* ---------- 재미 요소: 접속할 때마다 커서 색 랜덤 + 별빛 반짝임 ---------- */
-(function setRandomCursor(){
-  const colors = ['#2B5D6B','#B8862B','#1F9D6D','#7C3AED','#D14343','#2A5DB0','#C2410C','#0E9594'];
-  const color = colors[Math.floor(Math.random()*colors.length)];
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 26 26"><path d="M3 2 L3 21 L8.2 16.8 L11.4 23.5 L14.6 22 L11.4 15.3 L18.5 15.3 Z" fill="${color}" stroke="#1a1a1a" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
-  const b64 = btoa(unescape(encodeURIComponent(svg)));
-  document.body.style.cursor = `url("data:image/svg+xml;base64,${b64}") 2 2, auto`;
-})();
-(function initStarfield(){
-  const field = document.getElementById('starfield');
-  const palette = ['#B8862B','#2C5282','#1F9D6D','#7C3AED'];
-  const count = 70;
-  for(let i=0;i<count;i++){
-    const s = document.createElement('div');
-    s.className = 'star';
-    s.style.left = (Math.random()*100).toFixed(2) + '%';
-    s.style.top = (Math.random()*100).toFixed(2) + '%';
-    const size = (Math.random()*2.4 + 1).toFixed(1);
-    s.style.width = size + 'px';
-    s.style.height = size + 'px';
-    const color = palette[Math.floor(Math.random()*palette.length)];
-    s.style.background = color;
-    s.style.boxShadow = `0 0 4px ${color}`;
-    s.style.animationDuration = (Math.random()*3 + 2).toFixed(2) + 's';
-    s.style.animationDelay = (Math.random()*4).toFixed(2) + 's';
-    field.appendChild(s);
+/* ---------- 재미 요소: 오로라 배경(CSS 애니메이션) + 따라다니는 dot 커서 ---------- */
+(function initCursorDot(){
+  if(!window.matchMedia('(pointer: fine)').matches) return; // 터치기기는 기본 커서 유지
+  document.documentElement.classList.add('custom-cursor');
+  const dot = document.getElementById('cursorDot');
+  let mouseX = window.innerWidth/2, mouseY = window.innerHeight/2, curX = mouseX, curY = mouseY;
+  document.addEventListener('mousemove', e=>{ mouseX = e.clientX; mouseY = e.clientY; });
+  function loop(){
+    curX += (mouseX - curX) * 0.18;
+    curY += (mouseY - curY) * 0.18;
+    dot.style.transform = `translate(${curX}px, ${curY}px) translate(-50%, -50%)`;
+    requestAnimationFrame(loop);
   }
+  loop();
+  const hoverSelector = 'button, .chip, .tab-btn, table.list tbody tr, select, input[type=file], a';
+  document.addEventListener('mouseover', e=>{ if(e.target.closest(hoverSelector)) dot.classList.add('hoverActive'); });
+  document.addEventListener('mouseout', e=>{ if(e.target.closest(hoverSelector)) dot.classList.remove('hoverActive'); });
 })();
 
 let allEntries = []; // 실시간 캐시
@@ -599,9 +620,14 @@ function detectGrades(deptText){
   });
   return found;
 }
-function checkConflicts(dateStr, periods, deptText){
+function normalizeGrades(gradesArr){
+  if(!gradesArr || gradesArr.length===0) return [];
+  if(gradesArr.includes('전학년')) return ['1','2','3'];
+  return gradesArr;
+}
+function checkConflicts(dateStr, periods, deptText, explicitGrades){
   const dow = dayOfWeek(dateStr);
-  const grades = detectGrades(deptText);
+  const grades = (explicitGrades && explicitGrades.length>0) ? normalizeGrades(explicitGrades) : detectGrades(deptText);
   if(grades.length===0) return [];
   const hits = [];
   BLOCKED_SLOTS.forEach(rule=>{
@@ -714,6 +740,7 @@ document.getElementById('entryForm').addEventListener('submit', async (e)=>{
 
   const date = document.getElementById('f_date').value;
   const endDateVal = document.getElementById('f_endDate').value;
+  const grades = Array.from(document.querySelectorAll('#f_grades input:checked')).map(i=>i.value);
   const periods = Array.from(periodsWrap.querySelectorAll('input:checked')).map(i=>parseInt(i.value));
   const dept = document.getElementById('f_dept').value.trim();
   const event = document.getElementById('f_event').value.trim();
@@ -745,7 +772,7 @@ document.getElementById('entryForm').addEventListener('submit', async (e)=>{
   // 기간에 포함된 날짜 중 스포츠클럽 시간과 겹치는 날짜가 있는지 전체 검사
   const conflictLines = [];
   dateList.forEach(d=>{
-    const c = checkConflicts(d, periods, dept);
+    const c = checkConflicts(d, periods, dept, grades);
     if(c.length>0) conflictLines.push(`${d} (${dayOfWeek(d)}): ${c.join(', ')}`);
   });
   if(conflictLines.length>0){
@@ -760,7 +787,7 @@ document.getElementById('entryForm').addEventListener('submit', async (e)=>{
       const ref = db.collection('changche_entries').doc();
       batch.set(ref, {
         date: d, dayOfWeek: dayOfWeek(d), semester: getSemester(d),
-        periods, department: dept, eventName: event, note,
+        grades, periods, department: dept, eventName: event, note,
         passwordHash,
         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -1009,15 +1036,21 @@ function renderCalendar(){
       }
       html += `<td class="${cls}"><div class="dnum" style="${dnumStyle}">${dNum}</div>`;
       if(holidayName && cls!=='otherMonth') html += `<div style="font-size:10.5px;color:var(--danger);margin-bottom:3px;">${holidayName}</div>`;
-      items.slice(0,4).forEach(it=>{
+      items.forEach(it=>{
         const c = deptColor(it.department);
         const hasPeriods = it.periods && it.periods.length>0;
-        const label = hasPeriods
-          ? `<div style="font-weight:700;">${periodsCompact(it.periods)}</div><div>${escapeHtml(it.eventName)}</div>`
-          : `<div style="font-weight:700;">${escapeHtml(it.eventName)}</div>`;
+        const gradeLabel = (it.grades && it.grades.length>0) ? it.grades.join(',') : '';
+        let line1, line2;
+        if(hasPeriods){
+          line1 = gradeLabel || periodsCompact(it.periods);
+          line2 = gradeLabel ? `${periodsCompact(it.periods)} : ${escapeHtml(it.eventName)}` : escapeHtml(it.eventName);
+        } else {
+          line1 = gradeLabel;
+          line2 = escapeHtml(it.eventName);
+        }
+        const label = (line1 ? `<div style="font-weight:700;">${line1}</div>` : '') + `<div style="font-weight:${hasPeriods?400:700};">${line2}</div>`;
         html += `<span class="chip" data-id="${it.id}" style="background:${c.bg};color:${c.text};border-color:${c.text}33;">${label}</span>`;
       });
-      if(items.length>4) html += `<div style="font-size:11px;color:var(--muted);">+${items.length-4}건 더</div>`;
       html += '</td>';
       dayCounter++;
     }
@@ -1174,6 +1207,7 @@ function openEditModal(id){
   activeEntry = allEntries.find(e=>e.id===id);
   if(!activeEntry) return;
   document.getElementById('d_date').textContent = `${activeEntry.date} (${activeEntry.dayOfWeek})`;
+  document.getElementById('d_grades').textContent = (activeEntry.grades && activeEntry.grades.length>0) ? activeEntry.grades.join(', ') : '(미지정)';
   document.getElementById('d_periods').textContent = periodsLabel(activeEntry.periods);
   document.getElementById('d_dept').textContent = activeEntry.department;
   document.getElementById('d_event').textContent = activeEntry.eventName;
@@ -1220,6 +1254,10 @@ function unlockAndFill(){
   document.getElementById('e_dept').value = activeEntry.department;
   document.getElementById('e_event').value = activeEntry.eventName;
   document.getElementById('e_note').value = activeEntry.note||'';
+  const activeGrades = activeEntry.grades || [];
+  document.querySelectorAll('#e_grades input').forEach(inp=>{
+    inp.checked = activeGrades.includes(inp.value);
+  });
   ePeriodsWrap.querySelectorAll('input').forEach(inp=>{
     inp.checked = activeEntry.periods.includes(parseInt(inp.value));
   });
@@ -1229,6 +1267,7 @@ function unlockAndFill(){
 document.getElementById('saveEditBtn').onclick = async ()=>{
   const msg = document.getElementById('editMsg');
   const date = document.getElementById('e_date').value;
+  const grades = Array.from(document.querySelectorAll('#e_grades input:checked')).map(i=>i.value);
   const periods = Array.from(ePeriodsWrap.querySelectorAll('input:checked')).map(i=>parseInt(i.value));
   const dept = document.getElementById('e_dept').value.trim();
   const event = document.getElementById('e_event').value.trim();
@@ -1237,7 +1276,7 @@ document.getElementById('saveEditBtn').onclick = async ()=>{
   if(!date || periods.length===0 || !dept || !event){
     msg.textContent='필수 항목을 모두 입력해주세요.'; msg.className='msg error'; return;
   }
-  const conflicts = checkConflicts(date, periods, dept);
+  const conflicts = checkConflicts(date, periods, dept, grades);
   if(conflicts.length>0){
     msg.innerHTML = '저장할 수 없습니다. 다음 시간과 겹칩니다: <br>' + conflicts.join('<br>');
     msg.className='msg error'; return;
@@ -1245,7 +1284,7 @@ document.getElementById('saveEditBtn').onclick = async ()=>{
   try{
     await db.collection('changche_entries').doc(activeEntry.id).update({
       date, dayOfWeek: dayOfWeek(date), semester: getSemester(date),
-      periods, department: dept, eventName: event, note,
+      grades, periods, department: dept, eventName: event, note,
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     });
     closeModal();
