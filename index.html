@@ -372,6 +372,7 @@
           <option value="1학기">1학기</option>
           <option value="2학기">2학기</option>
         </select>
+        <button type="button" class="secondary" id="exportExcelBtn">엑셀 다운로드</button>
         <button type="button" class="danger" id="bulkDeleteBtn" style="display:none;">선택한 <span id="selCount">0</span>개 삭제</button>
       </div>
       <table class="list" id="listTable">
@@ -1193,11 +1194,9 @@ function updateSortIndicators(){
   });
 }
 
-function renderList(){
+function getFilteredSortedRows(){
   const filter = document.getElementById('listSemFilter').value;
-  const body = document.getElementById('listBody');
-  const empty = document.getElementById('listEmpty');
-  const rows = allEntries
+  return allEntries
     .filter(en => filter==='all' || en.semester===filter)
     .slice()
     .sort((a,b)=>{
@@ -1212,6 +1211,31 @@ function renderList(){
       }
       return listSort.dir==='asc' ? r : -r;
     });
+}
+
+document.getElementById('exportExcelBtn').addEventListener('click', ()=>{
+  const rows = getFilteredSortedRows();
+  const data = rows.map(en=>({
+    '날짜': en.date,
+    '요일': en.dayOfWeek,
+    '학년': (en.grades && en.grades.length>0) ? en.grades.join(',') : '',
+    '교시': periodsLabel(en.periods),
+    '부서명': en.department,
+    '행사 또는 교육명': en.eventName,
+    '비고': en.note || ''
+  }));
+  const ws = XLSX.utils.json_to_sheet(data);
+  ws['!cols'] = [{wch:12},{wch:6},{wch:10},{wch:16},{wch:14},{wch:30},{wch:24}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '전체목록');
+  const fname = `창체계획_${todayStr()}.xlsx`;
+  XLSX.writeFile(wb, fname);
+});
+
+function renderList(){
+  const body = document.getElementById('listBody');
+  const empty = document.getElementById('listEmpty');
+  const rows = getFilteredSortedRows();
   updateSortIndicators();
 
   // 더 이상 목록에 없는 항목(삭제됨 등)은 선택 해제
