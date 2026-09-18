@@ -275,6 +275,11 @@
           <div class="field">
             <textarea id="bulk_text" placeholder="여기에 붙여넣기" autocomplete="off"></textarea>
           </div>
+          <div class="field">
+            <label>또는 엑셀(.xlsx) / CSV 파일로 불러오기</label>
+            <input type="file" id="bulk_file" accept=".xlsx,.xls,.csv" />
+            <p class="adminHint">파일을 선택하면 위 붙여넣기 칸에 내용이 자동으로 채워집니다. 내용을 확인한 뒤 아래 "일괄 업로드" 버튼을 눌러주세요.</p>
+          </div>
           <button type="button" id="bulkSubmit" class="secondary">일괄 업로드</button>
           <div class="msg" id="bulkMsg"></div>
         </form>
@@ -371,6 +376,7 @@
 <!-- ===================== Firebase SDK ===================== -->
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
 <script>
 /* =========================================================
@@ -577,6 +583,51 @@ document.getElementById('bulkSubmit').addEventListener('click', async ()=>{
     msg.textContent = '업로드 중 오류: ' + err.message;
     msg.className='msg error';
   }
+});
+
+/* ---------- 엑셀/CSV 파일 불러오기 -> 붙여넣기 칸 채우기 ---------- */
+document.getElementById('bulk_file').addEventListener('change', function(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const msg = document.getElementById('bulkMsg');
+  msg.className='msg'; msg.style.display='none';
+
+  const reader = new FileReader();
+  reader.onload = function(evt){
+    try{
+      const data = new Uint8Array(evt.target.result);
+      const wb = XLSX.read(data, { type: 'array' });
+      const firstSheetName = wb.SheetNames[0];
+      const sheet = wb.Sheets[firstSheetName];
+      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: '' });
+
+      const lines = [];
+      rows.forEach(row=>{
+        if(!row || row.length===0) return;
+        const first = String(row[0]||'').trim();
+        // 첫 칸이 1~12 사이 숫자(월)가 아니면 머리글/빈 줄로 보고 건너뜀
+        const monthNum = parseInt(first);
+        if(!monthNum || monthNum < 1 || monthNum > 12) return;
+        // 13칸(월~비고)까지 맞춰서 탭으로 이어붙임
+        const cells = [];
+        for(let i=0;i<13;i++){ cells.push(String(row[i] !== undefined ? row[i] : '').trim()); }
+        lines.push(cells.join('\t'));
+      });
+
+      if(lines.length===0){
+        msg.textContent = '파일에서 인식 가능한 행을 찾지 못했습니다. 첫 칸이 월(1~12) 숫자인지, 열 순서가 월/일자/요일/1~7교시/부서명/행사명/비고인지 확인해주세요.';
+        msg.className='msg error';
+        return;
+      }
+      document.getElementById('bulk_text').value = lines.join('\n');
+      msg.textContent = `파일에서 ${lines.length}행을 불러왔습니다. 내용을 확인한 뒤 "일괄 업로드"를 눌러주세요.`;
+      msg.className='msg success';
+    }catch(err){
+      msg.textContent = '파일을 읽는 중 오류: ' + err.message;
+      msg.className='msg error';
+    }
+  };
+  reader.readAsArrayBuffer(file);
 });
 
 /* ---------- 오늘 일정 ---------- */
