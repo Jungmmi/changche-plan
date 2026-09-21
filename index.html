@@ -242,6 +242,12 @@
         </div>
         <button type="button" class="secondary" id="calPrint">인쇄</button>
       </div>
+      <div class="periods" id="calGradeFilter" style="margin-bottom:14px;">
+        <label><input type="checkbox" value="1" checked> 1학년</label>
+        <label><input type="checkbox" value="2" checked> 2학년</label>
+        <label><input type="checkbox" value="3" checked> 3학년</label>
+        <label><input type="checkbox" value="전학년" checked> 전학년</label>
+      </div>
       <table class="cal" id="calTable"></table>
       <div id="deptLegend" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;"></div>
     </section>
@@ -655,6 +661,12 @@ async function sha256(text){
 function periodsLabel(arr){
   return arr.slice().sort((a,b)=>a-b).map(p=>p+'교시').join(', ');
 }
+// 학년 배열을 "1학년", "1,2학년", "전학년" 형태로 표시
+function gradeLabel(arr){
+  if(!arr || arr.length===0) return '';
+  if(arr.includes('전학년')) return '전학년';
+  return arr.slice().sort().join(',') + '학년';
+}
 // 달력 칩에 쓸 축약형: 연속 구간은 "2~5교시"처럼 묶음
 function periodsCompact(arr){
   if(!arr || arr.length===0) return '';
@@ -1057,16 +1069,16 @@ function renderCalendar(){
       }
       html += `<td class="${cls}"><div class="dnum" style="${dnumStyle}">${dNum}</div>`;
       if(holidayName && cls!=='otherMonth') html += `<div style="font-size:10.5px;color:var(--danger);margin-bottom:3px;">${holidayName}</div>`;
-      items.forEach(it=>{
+      items.filter(it=>passesGradeFilter(it)).forEach(it=>{
         const c = deptColor(it.department);
         const hasPeriods = it.periods && it.periods.length>0;
-        const gradeLabel = (it.grades && it.grades.length>0) ? it.grades.join(',') : '';
+        const gLabel = gradeLabel(it.grades);
         let line1, line2;
         if(hasPeriods){
-          line1 = gradeLabel || periodsCompact(it.periods);
-          line2 = gradeLabel ? `${periodsCompact(it.periods)} : ${escapeHtml(it.eventName)}` : escapeHtml(it.eventName);
+          line1 = gLabel || periodsCompact(it.periods);
+          line2 = gLabel ? `${periodsCompact(it.periods)} : ${escapeHtml(it.eventName)}` : escapeHtml(it.eventName);
         } else {
-          line1 = gradeLabel;
+          line1 = gLabel;
           line2 = escapeHtml(it.eventName);
         }
         const label = (line1 ? `<div style="font-weight:700;">${line1}</div>` : '') + `<div style="font-weight:${hasPeriods?400:700};">${line2}</div>`;
@@ -1088,6 +1100,25 @@ function renderCalendar(){
 document.getElementById('calPrint').onclick = ()=>{
   window.print();
 };
+
+/* ---------- 달력 학년 필터 ---------- */
+let calGradeFilter = new Set(['1','2','3','전학년']); // 기본: 전체 표시
+function passesGradeFilter(entry){
+  if(!entry.grades || entry.grades.length===0) return true; // 학년 미지정은 항상 표시
+  if(entry.grades.includes('전학년')){
+    // 전학년 항목은 학년 필터 중 하나라도 켜져 있으면 표시
+    return calGradeFilter.size > 0;
+  }
+  return entry.grades.some(g => calGradeFilter.has(g));
+}
+document.querySelectorAll('#calGradeFilter input').forEach(inp=>{
+  inp.addEventListener('change', ()=>{
+    calGradeFilter = new Set(
+      Array.from(document.querySelectorAll('#calGradeFilter input:checked')).map(i=>i.value)
+    );
+    renderCalendar();
+  });
+});
 
 /* ---------- 교시 카운트 (요일 x 교시 시간표) ---------- */
 const countSemSelect = document.getElementById('countSemSelect');
@@ -1218,7 +1249,7 @@ document.getElementById('exportExcelBtn').addEventListener('click', ()=>{
   const data = rows.map(en=>({
     '날짜': en.date,
     '요일': en.dayOfWeek,
-    '학년': (en.grades && en.grades.length>0) ? en.grades.join(',') : '',
+    '학년': gradeLabel(en.grades),
     '교시': periodsLabel(en.periods),
     '부서명': en.department,
     '행사 또는 교육명': en.eventName,
@@ -1251,7 +1282,7 @@ function renderList(){
       <td><input type="checkbox" class="rowChk" data-id="${en.id}" ${selectedIds.has(en.id)?'checked':''}></td>
       <td>${en.date}</td>
       <td>${en.dayOfWeek}</td>
-      <td>${(en.grades && en.grades.length>0) ? en.grades.join(',') : ''}</td>
+      <td>${gradeLabel(en.grades)}</td>
       <td>${periodsLabel(en.periods)}</td>
       <td>${escapeHtml(en.department)}</td>
       <td>${escapeHtml(en.eventName)}</td>
@@ -1290,7 +1321,7 @@ function openEditModal(id){
   activeEntry = allEntries.find(e=>e.id===id);
   if(!activeEntry) return;
   document.getElementById('d_date').textContent = `${activeEntry.date} (${activeEntry.dayOfWeek})`;
-  document.getElementById('d_grades').textContent = (activeEntry.grades && activeEntry.grades.length>0) ? activeEntry.grades.join(', ') : '(미지정)';
+  document.getElementById('d_grades').textContent = gradeLabel(activeEntry.grades) || '(미지정)';
   document.getElementById('d_periods').textContent = periodsLabel(activeEntry.periods);
   document.getElementById('d_dept').textContent = activeEntry.department;
   document.getElementById('d_event').textContent = activeEntry.eventName;
