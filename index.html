@@ -114,6 +114,7 @@
   }
   input:focus,textarea:focus{outline:none;border-color:var(--primary-light);}
   textarea{resize:vertical;}
+  .pwmask{-webkit-text-security:disc;text-security:disc;}
   .field{margin-bottom:16px;}
   .periods{display:flex;flex-wrap:wrap;gap:8px;}
   .periods label{
@@ -272,8 +273,6 @@
       <h2>창체 계획 입력</h2>
       <p class="note" style="margin:-8px 0 18px;background:var(--surface-alt);padding:10px 12px;border-radius:8px;font-size:12.5px;color:var(--muted);">저장한 내용은 홈 화면의 달력이나 전체목록에서 클릭해서 수정할 수 있습니다.</p>
       <form id="entryForm" autocomplete="off" novalidate>
-        <input type="text" name="fake-username" autocomplete="username" style="display:none">
-        <input type="password" name="fake-password" autocomplete="new-password" style="display:none">
         <div class="grid2">
           <div class="field">
             <label>날짜</label>
@@ -316,7 +315,7 @@
         </div>
         <div class="field">
           <label>수정용 비밀번호 (나중에 이 항목을 수정/삭제할 때 필요합니다)</label>
-          <input type="password" id="f_pw" required minlength="4" placeholder="4자 이상" autocomplete="new-password" />
+          <input type="text" id="f_pw" class="pwmask" required minlength="4" placeholder="4자 이상" autocomplete="off" />
         </div>
         <div class="formActions">
           <button type="submit">저장</button>
@@ -332,8 +331,6 @@
 일자는 "2026-04-07", "2026.4.7", "2026. 4. 7." 등 다양한 표기를 인식합니다. 연도 없이 "4.7"처럼만 써도 아래 "기준 연도"를 사용해 채워줍니다.
 과거 데이터이므로 스포츠클럽 시간 충돌 검사는 적용되지 않습니다.</div>
         <form id="bulkForm" autocomplete="off" onsubmit="return false;">
-          <input type="text" name="fake-username-2" autocomplete="username" style="display:none">
-          <input type="password" name="fake-password-2" autocomplete="new-password" style="display:none">
           <div class="grid2">
             <div class="field">
               <label>기준 연도</label>
@@ -341,7 +338,7 @@
             </div>
             <div class="field">
               <label>일괄 적용 비밀번호</label>
-              <input type="password" id="bulk_pw" minlength="4" placeholder="4자 이상" autocomplete="new-password" />
+              <input type="text" id="bulk_pw" class="pwmask" minlength="4" placeholder="4자 이상" autocomplete="off" />
             </div>
           </div>
           <div class="field">
@@ -433,7 +430,7 @@
       <div class="lockNotice">이 항목을 수정하거나 삭제하려면 등록 시 설정한 비밀번호를 입력하세요.</div>
       <div class="field">
         <label>비밀번호</label>
-        <input type="password" id="unlockPw" autocomplete="new-password" />
+        <input type="text" id="unlockPw" class="pwmask" autocomplete="off" />
         <p class="adminHint">관리자는 관리자 비밀번호를 입력하면 됩니다.</p>
       </div>
       <div class="msg error" id="unlockMsg" style="display:none;"></div>
@@ -1133,6 +1130,17 @@ SEMESTERS.forEach(s=>{
 })();
 countSemSelect.addEventListener('change', renderCounts);
 
+function heatStyle(value, max){
+  if(max<=0 || value<=0) return '';
+  const ratio = value / max; // 0~1
+  const from = [59,130,246];  // 파랑 (적음)
+  const to   = [220,38,38];   // 빨강 (많음)
+  const rgb = from.map((c,i)=> Math.round(c + (to[i]-c)*ratio));
+  const alpha = 0.18 + ratio*0.62;
+  const textColor = alpha > 0.5 ? '#fff' : 'var(--ink)';
+  return `background:rgba(${rgb[0]},${rgb[1]},${rgb[2]},${alpha});color:${textColor};`;
+}
+
 function renderCounts(){
   const semester = countSemSelect.value;
   const days = ['월','화','수','목','금'];
@@ -1147,12 +1155,15 @@ function renderCounts(){
     });
   });
 
+  let maxCount = 0;
+  for(let p=1;p<=7;p++){ days.forEach(d=>{ maxCount = Math.max(maxCount, (grid[p]&&grid[p][d])||0); }); }
+
   let html = '<tr><th></th>' + days.map(d=>`<th>${d}</th>`).join('') + '</tr>';
   for(let p=1;p<=7;p++){
     html += `<tr><th>${p}교시</th>`;
     days.forEach(d=>{
       const c = (grid[p] && grid[p][d]) || 0;
-      html += `<td>${c>0 ? c+'회' : '-'}</td>`;
+      html += `<td style="${heatStyle(c, maxCount)}">${c>0 ? c+'회' : '-'}</td>`;
     });
     html += '</tr>';
   }
